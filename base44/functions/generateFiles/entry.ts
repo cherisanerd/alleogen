@@ -134,12 +134,63 @@ Deno.serve(async (req) => {
 
     // 2. robots.txt
     const allowedCrawlers = data.aiCrawlers || {};
-    const robotsTxt = `User-agent: *\nAllow: /\n\n${allowedCrawlers.chatgpt !== false ? '# ChatGPT\nUser-agent: GPTBot\nAllow: /\n' : '# ChatGPT\nUser-agent: GPTBot\nDisallow: /\n'}${allowedCrawlers.google !== false ? '# Google Bard\nUser-agent: Google-Extended\nAllow: /\n' : '# Google Bard\nUser-agent: Google-Extended\nDisallow: /\n'}${allowedCrawlers.anthropic !== false ? '# Claude\nUser-agent: anthropic-ai\nAllow: /\n' : '# Claude\nUser-agent: anthropic-ai\nDisallow: /\n'}${allowedCrawlers.perplexity !== false ? '# Perplexity\nUser-agent: PerplexityBot\nAllow: /\n' : '# Perplexity\nUser-agent: PerplexityBot\nDisallow: /\n'}\n# Meta\nUser-agent: Meta-ExternalAgent\nAllow: /\n\n# Amazon\nUser-agent: Amazonbot\nAllow: /\n\n# Apple\nUser-agent: Applebot\nAllow: /\n\n# Cohere\nUser-agent: cohere-ai\nAllow: /\n\n# AI2\nUser-agent: AI2Bot\nAllow: /\n\nSitemap: ${website_url}/ai-sitemap.xml`;
+    const robotsTxt = `User-agent: *\nAllow: /\n\n${allowedCrawlers.chatgpt !== false ? '# ChatGPT\nUser-agent: GPTBot\nAllow: /\n' : '# ChatGPT\nUser-agent: GPTBot\nDisallow: /\n'}${allowedCrawlers.google !== false ? '# Google Bard\nUser-agent: Google-Extended\nAllow: /\n' : '# Google Bard\nUser-agent: Google-Extended\nDisallow: /\n'}${allowedCrawlers.anthropic !== false ? '# Claude\nUser-agent: anthropic-ai\nAllow: /\n' : '# Claude\nUser-agent: anthropic-ai\nDisallow: /\n'}${allowedCrawlers.perplexity !== false ? '# Perplexity\nUser-agent: PerplexityBot\nAllow: /\n' : '# Perplexity\nUser-agent: PerplexityBot\nDisallow: /\n'}\n# Meta\nUser-agent: Meta-ExternalAgent\nAllow: /\n\n# Amazon\nUser-agent: Amazonbot\nAllow: /\n\n# Apple\nUser-agent: Applebot\nAllow: /\n\n# Cohere\nUser-agent: cohere-ai\nAllow: /\n\n# AI2\nUser-agent: AI2Bot\nAllow: /\n\nSitemap: ${website_url}/sitemap.xml\nSitemap: ${website_url}/ai-sitemap.xml`;
     addFile('robots.txt', robotsTxt);
 
-    // 3. ai-sitemap.xml
-    const aiSitemap = `<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n  <url>\n    <loc>${website_url}</loc>\n    <lastmod>${new Date().toISOString().split('T')[0]}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>1.0</priority>\n  </url>\n  ${data.hasProducts ? `<url>\n    <loc>${website_url}/products</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.8</priority>\n  </url>` : ''}\n  ${data.hasBlog ? `<url>\n    <loc>${website_url}/blog</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.7</priority>\n  </url>` : ''}\n  <url>\n    <loc>${website_url}/about</loc>\n    <changefreq>monthly</changefreq>\n    <priority>0.6</priority>\n  </url>\n  <url>\n    <loc>${website_url}/contact</loc>\n    <changefreq>monthly</changefreq>\n    <priority>0.6</priority>\n  </url>\n</urlset>`;
-    addFile('ai-sitemap.xml', aiSitemap);
+    // 3. sitemap.xml — built from scraped internal link inventory when available,
+    //    with fallback to siteStructure-derived top-level URLs. ai-sitemap.xml is
+    //    emitted as a copy for backward compatibility with any existing robots.txt
+    //    entries pointing to the legacy filename.
+    const today = new Date().toISOString().split('T')[0];
+    const siteStructure = ex.siteStructure || {};
+
+    const changefreqFor = (path) => {
+      const p = path.toLowerCase();
+      if (p === '/' || p === '') return 'weekly';
+      if (/\/(blog|news|articles?)(\/|$)/.test(p)) return 'weekly';
+      if (/\/(product|shop|store|pricing)(\/|$)/.test(p)) return 'daily';
+      if (/\/(about|contact|team|privacy|terms)(\/|$)/.test(p)) return 'monthly';
+      return 'weekly';
+    };
+    const priorityFor = (path) => {
+      if (path === '/' || path === '' || path === website_url) return '1.0';
+      const depth = (path.match(/\//g) || []).length;
+      if (depth <= 1) return '0.8';
+      if (depth === 2) return '0.7';
+      return '0.6';
+    };
+    const toAbsolute = (href) => {
+      try {
+        return new URL(href, website_url).toString().replace(/\/$/, '') || website_url;
+      } catch {
+        return null;
+      }
+    };
+
+    const sitemapUrlSet = new Set([website_url.replace(/\/$/, '')]);
+    if (Array.isArray(ex.internalLinks)) {
+      for (const link of ex.internalLinks) {
+        const absolute = toAbsolute(link?.url || link);
+        if (absolute && sitemapUrlSet.size < 50) sitemapUrlSet.add(absolute);
+      }
+    }
+    if (sitemapUrlSet.size <= 1) {
+      // Fallback: seed from siteStructure flags
+      if (siteStructure.hasProducts) sitemapUrlSet.add(`${website_url.replace(/\/$/, '')}/products`);
+      if (siteStructure.hasServices) sitemapUrlSet.add(`${website_url.replace(/\/$/, '')}/services`);
+      if (siteStructure.hasBlog) sitemapUrlSet.add(`${website_url.replace(/\/$/, '')}/blog`);
+      if (siteStructure.hasAbout) sitemapUrlSet.add(`${website_url.replace(/\/$/, '')}/about`);
+      if (siteStructure.hasContact) sitemapUrlSet.add(`${website_url.replace(/\/$/, '')}/contact`);
+    }
+
+    const sitemapEntries = Array.from(sitemapUrlSet).map((loc) => {
+      let pathOnly = '/';
+      try { pathOnly = new URL(loc).pathname || '/'; } catch {}
+      return `  <url>\n    <loc>${loc}</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>${changefreqFor(pathOnly)}</changefreq>\n    <priority>${priorityFor(pathOnly)}</priority>\n  </url>`;
+    }).join('\n');
+    const sitemapXml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${sitemapEntries}\n</urlset>`;
+    addFile('sitemap.xml', sitemapXml);
+    addFile('ai-sitemap.xml', sitemapXml);
 
     // 4. schema-organization.json
     const schemaOrg = {
@@ -205,6 +256,26 @@ Deno.serve(async (req) => {
       schemaOrg["sameAs"] = data.socialLinks.split('\n').filter(l => l.trim());
     }
 
+    // hasOfferCatalog: parse Q3 productsServices into Offer items
+    if (productsLine) {
+      const offerItems = productsLine
+        .split(/[,\n]/)
+        .map(s => s.trim())
+        .filter(s => s.length > 2 && s.length < 120)
+        .slice(0, 10)
+        .map(name => ({
+          "@type": "Offer",
+          "itemOffered": { "@type": "Service", "name": name }
+        }));
+      if (offerItems.length > 0) {
+        schemaOrg["hasOfferCatalog"] = {
+          "@type": "OfferCatalog",
+          "name": `${businessNameFinal} — Products & Services`,
+          "itemListElement": offerItems
+        };
+      }
+    }
+
     addFile('schema-organization.json', JSON.stringify(schemaOrg, null, 2));
 
     // 5. schema-website.json
@@ -222,8 +293,97 @@ Deno.serve(async (req) => {
     };
     addFile('schema-website.json', JSON.stringify(schemaWebsite, null, 2));
 
-    // 6. README.md
-    const readme = `# AEO Package - ${business_name}\n\n## Package Type: ${package_tier.toUpperCase()}\n\nThis package contains AI-optimized files for your website: ${website_url}\n\n## Files Included\n\n${package_tier === 'basic' ? `### Basic Package (7 files):\n- llm.txt - AI-readable business information\n- robots.txt - AI crawler permissions\n- ai-sitemap.xml - Sitemap for AI crawlers\n- schema-organization.json - Organization structured data\n- schema-website.json - Website structured data\n- README.md - This file\n- Implementation_Guide.md - Step-by-step implementation instructions` : `### Complete Package (13-15 files):\n- All Basic package files\n- llms.txt - Extended AI context\n- llms-full.txt - Comprehensive AI dataset\n- humans.txt - Human-readable site info\n- security.txt - Security contact information\n- .well-known/ai.json - AI configuration (business name, services, allowed crawlers)\n- schema-webpage.json - WebPage structured data\n${data.hasPhysicalLocation === 'yes' ? '- schema-localbusiness.json - LocalBusiness structured data\n' : ''}- Verification_Checklist.md - Post-implementation checklist`}\n\n## Quick Start\n\n1. Read the Implementation_Guide.md file\n2. Upload files to your website root directory\n3. Verify files are accessible\n4. Test with AI crawlers\n\n## Support\n\nFor questions or issues, contact: ${data.contactEmail || 'support'}\n\nGenerated: ${new Date().toISOString().split('T')[0]}\nExpires: 90 days from generation\n`;
+    // 6. schema-faqpage.json — FAQPage schema from scraped faqItems + Q8 commonQuestion.
+    //    Google uses FAQPage schema for rich results and AI Overview citations.
+    const faqItemsScraped = Array.isArray(ex.faqItems) ? ex.faqItems : [];
+    const faqMainEntity = [];
+    for (const item of faqItemsScraped) {
+      if (faqMainEntity.length >= 10) break;
+      if (item?.q && item?.a) {
+        faqMainEntity.push({
+          "@type": "Question",
+          "name": String(item.q).trim(),
+          "acceptedAnswer": { "@type": "Answer", "text": String(item.a).trim() }
+        });
+      }
+    }
+    if (commonQuestion && faqMainEntity.length < 10) {
+      faqMainEntity.push({
+        "@type": "Question",
+        "name": commonQuestion,
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": `See ${website_url} for the full answer from ${businessNameFinal}.`
+        }
+      });
+    }
+    if (faqMainEntity.length > 0) {
+      const schemaFaq = {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": faqMainEntity
+      };
+      addFile('schema-faqpage.json', JSON.stringify(schemaFaq, null, 2));
+    }
+
+    // 7. schema-person.json — E-E-A-T signal. Primary GEO file.
+    //    Phase 1 uses Q4 founderExpert + scraped founderName/Role + socialLinks.
+    //    Q11 (knowsAbout) and Q13 (description) layer in during Phase 2.
+    const founderNameFromQ4 = founderLine ? founderLine.split(',')[0].trim() : '';
+    const personName = founderNameFromQ4 || ex.founderName || '';
+    if (personName) {
+      const schemaPerson = {
+        "@context": "https://schema.org",
+        "@type": "Person",
+        "name": personName
+      };
+      if (ex.founderRole) schemaPerson["jobTitle"] = ex.founderRole;
+      schemaPerson["description"] = data.knowledgePanel || founderLine || `${personName} of ${businessNameFinal}.`;
+      schemaPerson["worksFor"] = {
+        "@type": "Organization",
+        "name": businessNameFinal,
+        "url": website_url
+      };
+      const knowsAboutPerson = [];
+      if (data.topicOwnership) {
+        data.topicOwnership.split(/[,\n]/).map(s => s.trim()).filter(Boolean).forEach(t => {
+          if (!knowsAboutPerson.includes(t)) knowsAboutPerson.push(t);
+        });
+      }
+      if (Array.isArray(ex.industryKeywords)) {
+        ex.industryKeywords.slice(0, 5).forEach(k => {
+          if (!knowsAboutPerson.includes(k)) knowsAboutPerson.push(k);
+        });
+      }
+      if (knowsAboutPerson.length > 0) schemaPerson["knowsAbout"] = knowsAboutPerson;
+
+      const sameAsPerson = [];
+      if (Array.isArray(ex.socialLinks)) {
+        ex.socialLinks.forEach(l => { if (l && !sameAsPerson.includes(l)) sameAsPerson.push(l); });
+      }
+      if (data.socialLinks) {
+        data.socialLinks.split('\n').map(s => s.trim()).filter(Boolean).forEach(l => {
+          if (!sameAsPerson.includes(l)) sameAsPerson.push(l);
+        });
+      }
+      if (sameAsPerson.length > 0) schemaPerson["sameAs"] = sameAsPerson;
+
+      if (ex.siteStructure?.hasAbout) {
+        schemaPerson["url"] = `${website_url.replace(/\/$/, '')}/about`;
+      }
+
+      addFile('schema-person.json', JSON.stringify(schemaPerson, null, 2));
+    }
+
+    // 8. meta-tags.html — copy-paste Open Graph + Twitter Card block.
+    const metaDescForTags = (coreDescription || productsLine || '').replace(/"/g, '&quot;').split('\n')[0].slice(0, 200);
+    const metaTitle = businessNameFinal.replace(/"/g, '&quot;');
+    const metaImage = ex.logoUrl || '';
+    const metaTagsHtml = `<!-- ============================================\n     OPEN GRAPH & TWITTER CARD META TAGS\n     Copy and paste this block into your <head> tag\n     Generated by AEO File Generator v2.0 — ${today}\n     ============================================ -->\n<meta property="og:title" content="${metaTitle}" />\n<meta property="og:description" content="${metaDescForTags}" />\n<meta property="og:type" content="website" />\n<meta property="og:url" content="${website_url}" />\n${metaImage ? `<meta property="og:image" content="${metaImage}" />\n` : `<!-- <meta property="og:image" content="https://your-site.com/path/to/image.png" /> -->\n`}<meta name="twitter:card" content="summary_large_image" />\n<meta name="twitter:title" content="${metaTitle}" />\n<meta name="twitter:description" content="${metaDescForTags}" />\n${metaImage ? `<meta name="twitter:image" content="${metaImage}" />\n` : `<!-- <meta name="twitter:image" content="https://your-site.com/path/to/image.png" /> -->\n`}`;
+    addFile('meta-tags.html', metaTagsHtml);
+
+    // 9. README.md
+    const readme = `# AEO Package - ${business_name}\n\n## Package Type: ${package_tier.toUpperCase()}\n\nThis package contains SEO + AEO + GEO optimized files for your website: ${website_url}\n\n## Files Included\n\n${package_tier === 'basic' ? `### Basic Package:\n- llm.txt - AI-readable business information\n- robots.txt - AI crawler permissions + sitemap directive\n- sitemap.xml - Standard sitemap (submit to search engines)\n- ai-sitemap.xml - Legacy filename kept for backward compatibility\n- schema-organization.json - Organization structured data (SEO + AEO)\n- schema-website.json - Website structured data (SEO)\n- schema-faqpage.json - FAQ schema for rich results + AI Overview citations (when FAQ content is available)\n- schema-person.json - Person/E-E-A-T schema (when founder data is available)\n- meta-tags.html - Open Graph + Twitter Card copy-paste block\n- README.md - This file\n- Implementation_Guide.md - Step-by-step implementation instructions` : `### Complete Package (includes all Basic files plus):\n- llms.txt - Extended AI context\n- llms-full.txt - Comprehensive AI dataset\n- humans.txt - Human-readable site info\n- security.txt - Security contact information\n- .well-known/ai.json - AI configuration (business name, services, allowed crawlers)\n- schema-webpage.json - WebPage structured data\n${data.hasPhysicalLocation === 'yes' ? '- schema-localbusiness.json - LocalBusiness structured data\n' : ''}- Verification_Checklist.md - Post-implementation checklist`}\n\n## Quick Start\n\n1. Read the Implementation_Guide.md file\n2. Upload files to your website root directory\n3. Paste meta-tags.html into your site's <head> section\n4. Submit sitemap.xml to Google Search Console\n5. Verify schema with Google Rich Results Test\n\n## Support\n\nFor questions or issues, contact: ${data.contactEmail || 'support'}\n\nGenerated: ${new Date().toISOString().split('T')[0]}\nExpires: 90 days from generation\n`;
     addFile('README.md', readme);
 
     // 7. Implementation_Guide.md
