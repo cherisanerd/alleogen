@@ -1,0 +1,36 @@
+css
+@import url('https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.cdnfonts.com/css/mont');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --primary-purple: #7700CC;
+    --primary-dark: #47017a;
+    --primary-orange: #F4743B;
+    --background-light: #EEF0F2;
+    --text-dark: #180029;
+    --text-light: #FFFFFF;
+  }
+
+  body {
+    font-family: 'Mont', sans-serif;
+    font-weight: 400;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'League Spartan', sans-serif;
+  }
+
+  .heading {
+    font-family: 'League Spartan', sans-serif;
+  }
+
+  .subheading {
+    font-family: 'Mont', sans-serif;
+    font-weight: 700;
+  }
+}
