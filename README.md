@@ -12,10 +12,10 @@ Ships at `cherisanerd.com/tools/alleogen/`. PRDs: `AEO_File_Generator_v2_PRD.md`
 
 - **Frontend** — Vite + React + Tailwind + shadcn/ui in `src/`, built to `dist/`.
 - **Backend** — PHP 8.0+ REST API under `api/`, MySQL for state. One Composer dep (`stripe/stripe-php`) committed under `vendor/`.
-- **File generator** — `api/generations/generator.ts` runs as a Deno subprocess from `api/generations/generate.php`. The TypeScript file is the single source of truth for generated-file content; Deno fetches `jszip` via `npm:` specifier and caches it locally — no `npm install` at the backend path.
+- **File generator** — `api/generations/generator.php` + one PHP builder per output file under `api/generations/builders/`. Pure PHP, no subprocess, no external runtime. Outputs an in-memory `[filename => content]` map that's zipped with `ZipArchive`.
 - **Billing** — Stripe for one-time purchases (direct integration), GoHighLevel for subscription billing (webhooks in both directions).
 - **Storage** — Generated zips live in `storage/zips/` (web-denied by `.htaccess`), served by `api/generations/download.php` after auth.
-- **Secrets** — `api/config.local.php` (gitignored) holds DB password, Stripe keys, GHL API key + webhook secret, Deno path. Non-secret admin knobs (prices, credits, GHL product IDs) live in the `alleogen_settings` DB table and are editable at `/admin/settings`.
+- **Secrets** — `api/config.local.php` (gitignored) holds DB password, Stripe keys, GHL API key + webhook secret. Non-secret admin knobs (prices, credits, GHL product IDs) live in the `alleogen_settings` DB table and are editable at `/admin/settings`.
 
 ## Package tiers
 
@@ -29,11 +29,11 @@ Ships at `cherisanerd.com/tools/alleogen/`. PRDs: `AEO_File_Generator_v2_PRD.md`
 
 - PHP 8.0+ with `pdo_mysql`, `curl`, `zip`, `json`
 - MySQL 5.7+ or 8.0
-- `deno` on PATH (install: `curl -fsSL https://deno.land/install.sh | sh`). Override with `secrets.deno_path` in `config.local.php`.
-- `shell_exec` / `proc_open` enabled (PHP → Deno subprocess)
 - Cron access (hourly reminders + daily cleanup — see `api/cron/README.md`)
 - Write access to `storage/zips/`
 - Mail function or SMTP
+
+That's it. No Node.js, no Deno, no `shell_exec`, no extra binaries. Runs on standard shared hosting (Bluehost, SiteGround, DreamHost, cPanel hosts, etc.).
 
 ## Deploy
 
@@ -43,7 +43,7 @@ mysql -u root -p DATABASE_NAME < schema.sql
 
 # Backend
 cp api/config.local.example.php api/config.local.php
-# fill in DB creds, Stripe keys, GHL creds, deno_path
+# fill in DB creds, Stripe keys, GHL creds
 
 # Frontend
 npm install
@@ -97,7 +97,10 @@ Scripts: `npm run dev`, `npm run build`, `npm run lint`, `npm run typecheck`.
 │   ├── helpers.php, middleware.php, mailer.php
 │   ├── auth/                         login, logout, me, change-password
 │   ├── analyses/                     scraper + CRUD
-│   ├── generations/                  generator.ts (Deno), generate.php, CRUD, download
+│   ├── generations/
+│   │   ├── generator.php             orchestrator + shared helpers
+│   │   ├── builders/                 one PHP file per generated output
+│   │   └── generate.php, CRUD, download
 │   ├── payments/                     Stripe checkout + webhook + apply-coupon
 │   ├── ghl/                          webhook, client, subscribe-url, request-cancel
 │   ├── admin/                        users, coupons, generations, settings, error-logs, add-credits

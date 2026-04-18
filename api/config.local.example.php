@@ -47,12 +47,5 @@ return [
         // First admin email — any user account with this email is auto-admin
         // on first login. Leave blank to disable bootstrap.
         'bootstrap_admin_email' => '',
-
-        // Absolute path to the deno binary. Leave as 'deno' if it's on
-        // the web server's PATH. Common non-PATH install locations:
-        //   /root/.deno/bin/deno
-        //   /home/USER/.deno/bin/deno
-        //   /usr/local/bin/deno
-        'deno_path'             => 'deno',
     ],
 ];
