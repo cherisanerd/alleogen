@@ -1,0 +1,46 @@
+<?php
+/**
+ * GET /api/analyses/get?id={id}
+ *   (or ?token={access_token})
+ *
+ * Subscribers: must match user_id. Token callers: the token IS the auth.
+ */
+
+declare(strict_types=1);
+
+require_once __DIR__ . '/../config.php';
+
+requireMethod('GET');
+
+$id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+$token = isset($_GET['token']) ? (string) $_GET['token'] : '';
+
+if ($id <= 0 && $token === '') {
+    jsonResponse(['error' => 'id or token is required.'], 400);
+}
+
+$pdo = getDB();
+
+if ($token !== '') {
+    $stmt = $pdo->prepare('SELECT * FROM alleogen_analyses WHERE access_token = :t');
+    $stmt->execute([':t' => $token]);
+    $row = $stmt->fetch();
+    if ($row === false) jsonResponse(['error' => 'Not found.'], 404);
+    jsonResponse(['analysis' => $row], 200);
+}
+
+$stmt = $pdo->prepare('SELECT * FROM alleogen_analyses WHERE id = :id');
+$stmt->execute([':id' => $id]);
+$row = $stmt->fetch();
+if ($row === false) jsonResponse(['error' => 'Not found.'], 404);
+
+$auth = authenticateRequest();
+if ($auth === null || $auth['type'] !== 'session') {
+    jsonResponse(['error' => 'Not authenticated.'], 401);
+}
+$user = getUserById((int) $auth['user_id']);
+if ($user === null || ((int) $row['user_id'] !== (int) $user['id'] && empty($user['is_admin']))) {
+    jsonResponse(['error' => 'Access denied.'], 403);
+}
+
+jsonResponse(['analysis' => $row], 200);

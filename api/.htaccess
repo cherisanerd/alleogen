@@ -1,6 +1,6 @@
 # Deny direct access to shared include files. Only endpoint PHP files
 # (inside sub-directories) are meant to be hit by clients.
-<FilesMatch "^(config|config\.local|config\.local\.example|helpers|middleware|mailer|router|client)\.php$">
+<FilesMatch "^(config|config\.local|config\.local\.example|helpers|middleware|mailer|router|client|scraper)\.php$">
     Require all denied
 </FilesMatch>
 
