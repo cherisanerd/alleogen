@@ -1,39 +1,46 @@
-**Welcome to your Base44 project** 
+# AEO File Generator
 
-**About**
+A Base44 + Vite + React SaaS that scrapes a website, runs a short interview, and generates a downloadable ZIP of AI- and search-optimized files covering three disciplines:
 
-View and Edit  your app on [Base44.com](http://Base44.com) 
+- **SEO** — Traditional search (Google, Bing organic): sitemap, schema, meta tags, technical audit.
+- **AEO** — AI answer engines (ChatGPT, Claude, Perplexity direct answers): `llm.txt`, `llms.txt`, `llms-full.txt`, `.well-known/ai.json`.
+- **GEO** — AI-generated search results (Google AI Overviews, Bing Copilot, Perplexity citations): content brief, entity map, quotable Q&A snippets, topical authority plan.
 
-This project contains everything you need to run your app locally.
+See `AEO_File_Generator_v2_PRD.md` for the full product spec.
 
-**Edit the code in your local development environment**
+## Package tiers
 
-Any change pushed to the repo will also be reflected in the Base44 Builder.
+**Basic** — 11 core SEO + AEO files: `llm.txt`, `robots.txt`, `sitemap.xml`, `ai-sitemap.xml` (backward compat), `schema-organization.json`, `schema-website.json`, `schema-faqpage.json`, `schema-person.json`, `meta-tags.html`, `seo-audit.md`, plus a platform-specific `Implementation_Guide.md` and `README.md`.
 
-**Prerequisites:** 
+**Complete** — Everything in Basic plus the full AEO context (`llms.txt`, `llms-full.txt`, `humans.txt`, `security.txt`, `.well-known/ai.json`), additional schema (`schema-webpage.json`, `schema-breadcrumb.json`, `schema-article.json`, `schema-localbusiness.json` when applicable), and the flagship GEO layer: `geo-content-brief.md`, `entity-map.json`, `geo-qa-snippets.json`, `topical-authority-plan.md`, plus a `Verification_Checklist.md`.
 
-1. Clone the repository using the project's Git URL 
-2. Navigate to the project directory
-3. Install dependencies: `npm install`
-4. Create an `.env.local` file and set the right environment variables
+## Architecture
+
+- **Frontend** — Vite + React + Tailwind + shadcn/ui in `src/`.
+- **Serverless functions** — Deno entry points in `base44/functions/` for `analyzeWebsite`, `generateFiles`, payment flows, and coupon application.
+- **State** — Generation + Analysis records stored via the Base44 SDK. `questionnaire_data` is a JSON blob on the Generation entity.
+
+## Development
 
 ```
-VITE_BASE44_APP_ID=your_app_id
-VITE_BASE44_APP_BASE_URL=your_backend_url
-
-e.g.
-VITE_BASE44_APP_ID=cbef744a8545c389ef439ea6
-VITE_BASE44_APP_BASE_URL=https://my-to-do-list-81bfaad7.base44.app
+npm install
+cp .env.local.example .env.local   # create this yourself with:
+#   VITE_BASE44_APP_ID=...
+#   VITE_BASE44_APP_BASE_URL=...
+npm run dev
 ```
 
-Run the app: `npm run dev`
+Scripts: `npm run dev`, `npm run build`, `npm run lint`, `npm run typecheck`.
 
-**Publish your changes**
+## Questionnaire
 
-Open [Base44.com](http://Base44.com) and click on Publish.
+13 questions across 4 sections. Only Q1 (business name) and Q2 (core description) are required; all others are optional with skip buttons.
 
-**Docs & Support**
+1. **Your Business** — Q1–Q3
+2. **Your Authority** — Q4–Q6
+3. **For AI Systems** — Q7–Q9
+4. **For Search & Citations** — Q10 proof points, Q11 topic ownership, Q12 differentiation, Q13 knowledge panel
 
-Documentation: [https://docs.base44.com/Integrations/Using-GitHub](https://docs.base44.com/Integrations/Using-GitHub)
+## Support
 
-Support: [https://app.base44.com/support](https://app.base44.com/support)
+Publish changes from the Base44 Builder after pushing to this repo. Docs: https://docs.base44.com/Integrations/Using-GitHub

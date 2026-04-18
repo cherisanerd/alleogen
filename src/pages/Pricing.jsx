@@ -109,10 +109,10 @@ export default function Pricing() {
             Simple, Transparent Pricing
           </div>
           <h1 className="heading text-4xl md:text-5xl font-bold text-[#180029] mb-4">
-            Choose Your AEO Package
+            Choose Your SEO + AEO + GEO Package
           </h1>
           <p className="text-lg text-[#180029]/70 max-w-2xl mx-auto">
-            One-time payment. No subscriptions. Get everything you need to optimize your website for AI discovery.
+            One-time payment. No subscriptions. Covers traditional search (SEO), AI answer engines (AEO), and AI-generated results (GEO) in a single package.
           </p>
         </motion.div>
 
@@ -155,34 +155,38 @@ export default function Pricing() {
                   <span className="text-[#180029]/70 ml-2">one-time</span>
                 </div>
                 <p className="text-sm text-[#180029]/70 mt-2">
-                  Perfect for getting started with AEO
+                  Core SEO + AEO foundation for solo sites
                 </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <span className="inline-flex items-center text-xs font-semibold px-2 py-1 rounded-full bg-emerald-100 text-emerald-800">SEO</span>
+                  <span className="inline-flex items-center text-xs font-semibold px-2 py-1 rounded-full bg-blue-100 text-blue-800">AEO</span>
+                </div>
               </CardHeader>
               <CardContent className="p-8">
                 <div className="space-y-4 mb-8">
                   <div className="flex items-start gap-3">
                     <Check className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span className="text-[#180029]">7 essential AEO files</span>
+                    <span className="text-[#180029]">11 essential SEO + AEO files</span>
                   </div>
                   <div className="flex items-start gap-3">
                     <Check className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span className="text-[#180029]">AI-optimized llm.txt</span>
+                    <span className="text-[#180029]">llm.txt, robots.txt, real sitemap.xml</span>
                   </div>
                   <div className="flex items-start gap-3">
                     <Check className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span className="text-[#180029]">Custom robots.txt for AI crawlers</span>
+                    <span className="text-[#180029]">Organization, Website, FAQPage, Person schema</span>
                   </div>
                   <div className="flex items-start gap-3">
                     <Check className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span className="text-[#180029]">AI-specific sitemap</span>
+                    <span className="text-[#180029]">Open Graph + Twitter Card meta tags</span>
                   </div>
                   <div className="flex items-start gap-3">
                     <Check className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span className="text-[#180029]">Schema.org structured data</span>
+                    <span className="text-[#180029]">Technical SEO audit with platform-specific fixes</span>
                   </div>
                   <div className="flex items-start gap-3">
                     <Check className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                    <span className="text-[#180029]">Implementation guide</span>
+                    <span className="text-[#180029]">Implementation guide tailored to your platform</span>
                   </div>
                   <div className="flex items-start gap-3">
                     <Check className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
@@ -232,8 +236,13 @@ export default function Pricing() {
                   <span className="text-[#180029]/70 ml-2">one-time</span>
                 </div>
                 <p className="text-sm text-[#180029]/70 mt-2">
-                  Maximum AI visibility and optimization
+                  SEO + AEO + the full GEO layer
                 </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <span className="inline-flex items-center text-xs font-semibold px-2 py-1 rounded-full bg-emerald-100 text-emerald-800">SEO</span>
+                  <span className="inline-flex items-center text-xs font-semibold px-2 py-1 rounded-full bg-blue-100 text-blue-800">AEO</span>
+                  <span className="inline-flex items-center text-xs font-semibold px-2 py-1 rounded-full bg-purple-100 text-purple-800">GEO</span>
+                </div>
               </CardHeader>
               <CardContent className="p-8">
                 <div className="space-y-4 mb-8">
@@ -243,35 +252,35 @@ export default function Pricing() {
                   </div>
                   <div className="flex items-start gap-3">
                     <Check className="w-5 h-5 text-[#7700CC] flex-shrink-0 mt-0.5" />
-                    <span className="text-[#180029]">13-15 comprehensive files</span>
+                    <span className="text-[#180029]">Up to 26 files covering all three disciplines</span>
                   </div>
                   <div className="flex items-start gap-3">
                     <Check className="w-5 h-5 text-[#7700CC] flex-shrink-0 mt-0.5" />
-                    <span className="text-[#180029]">Extended llms.txt & llms-full.txt</span>
+                    <span className="text-[#180029]">Extended llms.txt &amp; llms-full.txt AI context</span>
                   </div>
                   <div className="flex items-start gap-3">
                     <Check className="w-5 h-5 text-[#7700CC] flex-shrink-0 mt-0.5" />
-                    <span className="text-[#180029]">humans.txt file</span>
+                    <span className="text-[#180029]">humans.txt, security.txt, .well-known/ai.json</span>
                   </div>
                   <div className="flex items-start gap-3">
                     <Check className="w-5 h-5 text-[#7700CC] flex-shrink-0 mt-0.5" />
-                    <span className="text-[#180029]">security.txt configuration</span>
+                    <span className="text-[#180029]">WebPage, Breadcrumb, Article, LocalBusiness schema</span>
                   </div>
                   <div className="flex items-start gap-3">
                     <Check className="w-5 h-5 text-[#7700CC] flex-shrink-0 mt-0.5" />
-                    <span className="text-[#180029]">.well-known/ai.json</span>
+                    <span className="text-[#180029]">GEO content brief with citation-ready claim blocks</span>
                   </div>
                   <div className="flex items-start gap-3">
                     <Check className="w-5 h-5 text-[#7700CC] flex-shrink-0 mt-0.5" />
-                    <span className="text-[#180029]">LocalBusiness schema (if applicable)</span>
+                    <span className="text-[#180029]">Entity map + Q&amp;A snippets for AI Overviews</span>
                   </div>
                   <div className="flex items-start gap-3">
                     <Check className="w-5 h-5 text-[#7700CC] flex-shrink-0 mt-0.5" />
-                    <span className="text-[#180029]">Verification checklist</span>
+                    <span className="text-[#180029]">Topical authority plan with 90-day roadmap</span>
                   </div>
                   <div className="flex items-start gap-3">
                     <Check className="w-5 h-5 text-[#7700CC] flex-shrink-0 mt-0.5" />
-                    <span className="text-[#180029]">90-day download access</span>
+                    <span className="text-[#180029]">Verification checklist + 90-day download access</span>
                   </div>
                 </div>
 
@@ -312,7 +321,7 @@ export default function Pricing() {
                 </h3>
               </div>
               <p className="text-lg text-[#180029]/70 mb-6">
-                Upgrade to Complete for just <span className="font-bold text-[#F4743B]">$50</span> from your dashboard and get 6-8 additional files plus extended documentation.
+                Upgrade to Complete for just <span className="font-bold text-[#F4743B]">$50</span> from your dashboard to unlock the full GEO layer — content brief, entity map, topical authority plan, and citation-ready Q&amp;A snippets.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Button
@@ -344,7 +353,7 @@ export default function Pricing() {
                   What's the difference between packages?
                 </h3>
                 <p className="text-sm text-[#180029]/70">
-                  Basic includes 7 essential files for AI optimization. Complete includes 13-15 files with extended data, additional schema types, and comprehensive documentation.
+                  Basic covers SEO + AEO with 11 files (llm.txt, real sitemap, OG meta tags, FAQ/Person schema, SEO audit). Complete adds the full GEO layer — content brief, entity map, Q&amp;A snippets, topical authority plan — and extra schema (WebPage, Breadcrumb, Article, LocalBusiness).
                 </p>
               </CardContent>
             </Card>
@@ -366,7 +375,7 @@ export default function Pricing() {
                   Can I upgrade later?
                 </h3>
                 <p className="text-sm text-[#180029]/70">
-                  Yes! If you start with Basic, you can upgrade to Complete for $50 from your dashboard. The upgrade regenerates all files with the enhanced package.
+                  Yes. Upgrade Basic → Complete for $50 from your dashboard and all files regenerate with the extended AEO context + full GEO layer (content brief, entity map, topical authority plan).
                 </p>
               </CardContent>
             </Card>
