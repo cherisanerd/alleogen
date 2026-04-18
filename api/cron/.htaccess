@@ -1,0 +1,3 @@
+# Cron scripts must never be reachable over HTTP. They exit with 403
+# themselves, but belt-and-suspenders: deny at the web server layer too.
+Require all denied
