@@ -1,6 +1,24 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 import { DOMParser } from 'npm:linkedom';
 
+async function fetchWithTimeout(url, timeoutMs) {
+  const controller = new AbortController();
+  const t = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, {
+      signal: controller.signal,
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; AEOBot/1.0; +https://aeofilegenerator.com)' }
+    });
+    clearTimeout(t);
+    if (!response.ok) return { ok: false, status: response.status, text: '' };
+    const text = await response.text();
+    return { ok: true, status: response.status, text };
+  } catch (error) {
+    clearTimeout(t);
+    return { ok: false, status: 0, text: '', error: error?.message || 'fetch failed' };
+  }
+}
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -323,6 +341,94 @@ Deno.serve(async (req) => {
       });
       const pageCount = Math.max(uniqueLinks.size, 5);
 
+      // === Phase 2 scraper additions ===
+
+      // Existing JSON-LD schema types on the page
+      const existingSchemaTypes = [];
+      const schemaRawBlocks = [];
+      doc.querySelectorAll('script[type="application/ld+json"]').forEach(el => {
+        const raw = el.textContent?.trim();
+        if (!raw) return;
+        if (schemaRawBlocks.length < 5) schemaRawBlocks.push(raw.slice(0, 2000));
+        try {
+          const parsed = JSON.parse(raw);
+          const items = Array.isArray(parsed) ? parsed : (parsed['@graph'] || [parsed]);
+          items.forEach(item => {
+            const t = item?.['@type'];
+            if (!t) return;
+            const types = Array.isArray(t) ? t : [t];
+            types.forEach(tt => { if (tt && !existingSchemaTypes.includes(tt)) existingSchemaTypes.push(tt); });
+          });
+        } catch { /* malformed JSON-LD — ignore */ }
+      });
+      // Microdata types
+      doc.querySelectorAll('[itemtype]').forEach(el => {
+        const t = el.getAttribute('itemtype') || '';
+        const match = t.match(/schema\.org\/(\w+)/);
+        if (match && !existingSchemaTypes.includes(match[1])) existingSchemaTypes.push(match[1]);
+      });
+      const existingSchema = { types: existingSchemaTypes, raw: schemaRawBlocks };
+
+      // OG + Twitter Card tag presence
+      const ogTags = {
+        title: !!doc.querySelector('meta[property="og:title"]'),
+        description: !!doc.querySelector('meta[property="og:description"]'),
+        image: !!doc.querySelector('meta[property="og:image"]'),
+        type: !!doc.querySelector('meta[property="og:type"]'),
+        twitterCard: !!doc.querySelector('meta[name="twitter:card"]')
+      };
+
+      // Canonical URL detection
+      const canonicalEl = doc.querySelector('link[rel="canonical"]');
+      const canonical = {
+        present: !!canonicalEl,
+        url: canonicalEl?.getAttribute('href') || ''
+      };
+
+      // Internal link inventory (up to 50 unique URLs with anchor text)
+      const internalLinks = [];
+      const seenInternal = new Set();
+      let siteOrigin = '';
+      try { siteOrigin = new URL(website_url).origin; } catch {}
+      allLinks.forEach(link => {
+        if (internalLinks.length >= 50) return;
+        const href = link.getAttribute('href');
+        if (!href) return;
+        if (href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:') || href.startsWith('javascript:')) return;
+        let absolute = '';
+        try {
+          absolute = new URL(href, website_url).toString().split('#')[0];
+        } catch { return; }
+        if (siteOrigin && !absolute.startsWith(siteOrigin)) return;
+        if (seenInternal.has(absolute)) return;
+        seenInternal.add(absolute);
+        const anchorText = (link.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 120);
+        internalLinks.push({ url: absolute, anchorText });
+      });
+
+      // Heading structure (H1/H2/H3)
+      const headingStructure = [];
+      doc.querySelectorAll('h1, h2, h3').forEach(h => {
+        if (headingStructure.length >= 50) return;
+        const level = Number(h.tagName?.[1]) || 0;
+        const text = (h.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 200);
+        if (text) headingStructure.push({ level, text });
+      });
+
+      // Fetch existing robots.txt + sitemap.xml (non-blocking, 5s each)
+      const [robotsResult, sitemapResult] = await Promise.allSettled([
+        fetchWithTimeout(`${siteOrigin}/robots.txt`, 5000),
+        fetchWithTimeout(`${siteOrigin}/sitemap.xml`, 5000)
+      ]);
+      const existingRobotsTxt = robotsResult.status === 'fulfilled' && robotsResult.value.ok
+        ? { present: true, content: robotsResult.value.text.slice(0, 4000) }
+        : { present: false, content: '' };
+      let existingSitemap = { present: false, urlCount: 0 };
+      if (sitemapResult.status === 'fulfilled' && sitemapResult.value.ok) {
+        const matches = sitemapResult.value.text.match(/<loc>/g);
+        existingSitemap = { present: true, urlCount: matches ? matches.length : 0 };
+      }
+
       const extractedData = {
         businessName,
         pageTitle,
@@ -345,7 +451,14 @@ Deno.serve(async (req) => {
         targetAudience,
         socialProofSignals,
         faqItems,
-        blogPosts
+        blogPosts,
+        existingSchema,
+        ogTags,
+        canonical,
+        internalLinks,
+        headingStructure,
+        existingRobotsTxt,
+        existingSitemap
       };
 
       // Update analysis with results

@@ -180,6 +180,54 @@ export default function Review() {
               </CardContent>
             </Card>
 
+            {/* Search & Citations (Q10-Q13) */}
+            {(answers.proofPoints || answers.topicOwnership || answers.competitorDiff || answers.knowledgePanel) && (
+              <Card className="border-2 border-gray-200 shadow-lg">
+                <CardHeader className="bg-gradient-to-r from-[#7700CC]/5 to-[#47007A]/5">
+                  <div className="flex justify-between items-center">
+                    <CardTitle className="heading text-xl text-[#180029]">
+                      Search &amp; Citations
+                    </CardTitle>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => navigate(`/questionnaire?analysis_id=${generation.analysis_id}`)}
+                      className="gap-2 text-[#7700CC] hover:text-[#47007A]"
+                    >
+                      <Edit className="w-4 h-4" />
+                      Edit
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-6 space-y-4">
+                  {answers.proofPoints && (
+                    <div>
+                      <p className="text-xs text-[#180029]/60 mb-1">Proof points (Q10)</p>
+                      <p className="text-[#180029] whitespace-pre-line">{answers.proofPoints}</p>
+                    </div>
+                  )}
+                  {answers.topicOwnership && (
+                    <div>
+                      <p className="text-xs text-[#180029]/60 mb-1">Topic ownership (Q11)</p>
+                      <p className="text-[#180029] whitespace-pre-line">{answers.topicOwnership}</p>
+                    </div>
+                  )}
+                  {answers.competitorDiff && (
+                    <div>
+                      <p className="text-xs text-[#180029]/60 mb-1">Differentiation (Q12)</p>
+                      <p className="text-[#180029] whitespace-pre-line">{answers.competitorDiff}</p>
+                    </div>
+                  )}
+                  {answers.knowledgePanel && (
+                    <div>
+                      <p className="text-xs text-[#180029]/60 mb-1">Knowledge panel (Q13)</p>
+                      <p className="text-[#180029] whitespace-pre-line">{answers.knowledgePanel}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
             {/* Platform & Preferences */}
             <Card className="border-2 border-gray-200 shadow-lg">
               <CardHeader className="bg-gradient-to-r from-[#7700CC]/5 to-[#47007A]/5">
