@@ -546,8 +546,127 @@ Deno.serve(async (req) => {
     const readme = `# AEO Package - ${business_name}\n\n## Package Type: ${package_tier.toUpperCase()}\n\nThis package contains SEO + AEO + GEO optimized files for your website: ${website_url}\n\n## Files Included\n\n${package_tier === 'basic' ? `### Basic Package:\n- llm.txt - AI-readable business information\n- robots.txt - AI crawler permissions + sitemap directive\n- sitemap.xml - Standard sitemap (submit to search engines)\n- ai-sitemap.xml - Legacy filename kept for backward compatibility\n- schema-organization.json - Organization structured data (SEO + AEO)\n- schema-website.json - Website structured data (SEO)\n- schema-faqpage.json - FAQ schema for rich results + AI Overview citations (when FAQ content is available)\n- schema-person.json - Person/E-E-A-T schema (when founder data is available)\n- meta-tags.html - Open Graph + Twitter Card copy-paste block\n- seo-audit.md - Technical SEO audit with platform-specific fixes\n- README.md - This file\n- Implementation_Guide.md - Step-by-step implementation instructions` : `### Complete Package (includes all Basic files plus):\n- llms.txt - Extended AI context\n- llms-full.txt - Comprehensive AI dataset\n- humans.txt - Human-readable site info\n- security.txt - Security contact information\n- .well-known/ai.json - AI configuration (business name, services, allowed crawlers)\n- schema-webpage.json - WebPage structured data\n- schema-breadcrumb.json - Breadcrumb navigation schema\n${data.hasPhysicalLocation === 'yes' ? '- schema-localbusiness.json - LocalBusiness structured data\n' : ''}- Verification_Checklist.md - Post-implementation checklist`}\n\n## Quick Start\n\n1. Read the Implementation_Guide.md file\n2. Upload files to your website root directory\n3. Paste meta-tags.html into your site's <head> section\n4. Submit sitemap.xml to Google Search Console\n5. Verify schema with Google Rich Results Test\n\n## Support\n\nFor questions or issues, contact: ${data.contactEmail || 'support'}\n\nGenerated: ${new Date().toISOString().split('T')[0]}\nExpires: 90 days from generation\n`;
     addFile('README.md', readme);
 
-    // 7. Implementation_Guide.md
-    const implGuide = `# Implementation Guide\n\n## Step 1: File Upload\n\nUpload all files to your website's root directory:\n- ${website_url}/llm.txt\n- ${website_url}/robots.txt\n- ${website_url}/ai-sitemap.xml\n- etc.\n\n## Step 2: Platform-Specific Instructions\n\n### ${data.platform || 'Your Platform'}\n\n${data.platform === 'WordPress' ? `**WordPress:**\n1. Use FTP or File Manager in cPanel\n2. Upload files to /public_html/ or /wp-content/\n3. Install Yoast SEO or Rank Math for schema\n4. Add schema files via theme functions.php` : ''}\n\n${data.platform === 'Shopify' ? `**Shopify:**\n1. Go to Settings > Files\n2. Upload static files\n3. Add schema to theme.liquid\n4. Verify robots.txt in /robots.txt` : ''}\n\n${data.platform === 'Custom/Other' ? `**Custom Website:**\n1. Upload files to document root\n2. Add schema to HTML <head> section\n3. Update .htaccess if needed\n4. Clear CDN cache` : ''}\n\n## Step 3: Verification\n\n1. Check ${website_url}/llm.txt loads correctly\n2. Verify ${website_url}/robots.txt is accessible\n3. Test schema with Google Rich Results Test\n4. Submit sitemap to Google Search Console\n\n## Step 4: Monitor\n\n- Check crawl stats weekly\n- Update llm.txt when business info changes\n- Maintain AI crawler permissions in robots.txt\n\n## Need Help?\n\nEmail: ${data.contactEmail || 'support'}\n`;
+    // 7. Implementation_Guide.md — rewritten for v2.0 (SEO + AEO + GEO).
+    const platformName = data.platform || ex.platform || 'Custom/Other';
+    const platformSeoSteps = {
+      'WordPress': [
+        `1. Install RankMath (free) or Yoast SEO Premium. Both support custom JSON-LD.`,
+        `2. Paste each schema-*.json file into RankMath → Titles & Meta → Global Meta → Advanced → Custom JSON-LD (or the Yoast equivalent).`,
+        `3. Upload robots.txt, sitemap.xml, ai-sitemap.xml, llm.txt, humans.txt, security.txt, and meta-tags.html content to /public_html/ via your host's file manager or SFTP.`,
+        `4. In your theme's functions.php (or a snippets plugin), add the meta-tags.html content inside wp_head via an add_action hook if your SEO plugin doesn't already cover Open Graph.`
+      ],
+      'Shopify': [
+        `1. In Shopify admin: Online Store → Preferences → Edit robots.txt.liquid. Merge the provided robots.txt directives.`,
+        `2. Online Store → Navigation → Pages. Create a page for llm.txt, llms.txt, and llms-full.txt if Shopify won't serve them at the root (Shopify restricts root-level static files). Alternatively, use a subdomain or reverse proxy.`,
+        `3. Paste schema JSON-LD blocks into theme.liquid within <head>, wrapped in <script type="application/ld+json"> tags. Do this before </head>.`,
+        `4. meta-tags.html content goes into theme.liquid <head> as well.`
+      ],
+      'Wix': [
+        `1. Settings → Custom Code. Add each schema-*.json as a Custom Code snippet targeting <head> on all pages, wrapped in <script type="application/ld+json">.`,
+        `2. meta-tags.html content: paste as another Custom Code snippet targeting <head>.`,
+        `3. Upload robots.txt directives via Marketing & SEO → SEO Settings → Advanced SEO → robots.txt.`,
+        `4. Submit sitemap.xml via Google Search Console — Wix generates its own sitemap at /sitemap.xml, so you'll use the Wix-managed file unless you're on Premium with DNS control.`
+      ],
+      'Squarespace': [
+        `1. Settings → Advanced → Code Injection → Header. Paste each schema-*.json wrapped in <script type="application/ld+json"> tags, followed by the meta-tags.html content.`,
+        `2. Squarespace automatically serves robots.txt at /robots.txt — you can't replace it, but you can review it at /robots.txt.`,
+        `3. sitemap.xml is auto-generated by Squarespace. Use the provided sitemap.xml as a reference if customizing via Developer Mode.`,
+        `4. llm.txt, llms.txt, and similar files require Developer Mode or a subdomain.`
+      ],
+      'Webflow': [
+        `1. Project Settings → Custom Code → Head Code. Paste each schema-*.json inside <script type="application/ld+json"> tags.`,
+        `2. Paste meta-tags.html content into Head Code as well.`,
+        `3. Project Settings → SEO → Indexing → robots.txt: paste the provided content.`,
+        `4. Webflow auto-generates a sitemap.xml. Use the provided sitemap.xml as a reference for structure.`
+      ],
+      'Framer': [
+        `1. Site Settings → General → Custom Code → End of <head>. Paste meta-tags.html and each schema-*.json (wrapped in <script type="application/ld+json">).`,
+        `2. Site Settings → SEO → Custom Domain: upload robots.txt at the domain level if supported, or rely on Framer's defaults.`,
+        `3. Framer generates sitemap.xml automatically.`
+      ],
+      'Kajabi': [
+        `1. Site Settings → Advanced Settings → Site header code. Paste schema JSON-LD blocks and meta-tags.html content.`,
+        `2. Kajabi manages robots.txt at the account level; request custom edits from support if needed.`,
+        `3. llm.txt and similar static files need a subdomain or external host.`
+      ],
+      'Ghost': [
+        `1. Admin → Settings → Code Injection → Site Header. Paste schema JSON-LD and meta-tags.html.`,
+        `2. Admin → Settings → Labs or via theme: edit robots.txt.`,
+        `3. Ghost auto-generates sitemap.xml.`
+      ],
+      'Custom/Other': [
+        `1. Upload robots.txt, sitemap.xml, ai-sitemap.xml, llm.txt, humans.txt, security.txt, and meta-tags.html (as HTML) to your site root directory.`,
+        `2. In your HTML <head>, paste each schema-*.json wrapped in <script type="application/ld+json"> tags.`,
+        `3. Also in <head>, paste the meta-tags.html content.`,
+        `4. If you use a CDN, purge cache after upload.`
+      ]
+    };
+    const seoStepLines = (platformSeoSteps[platformName] || platformSeoSteps['Custom/Other']).join('\n');
+
+    const implGuideParts = [
+      `# Implementation Guide — ${businessNameFinal}`,
+      ``,
+      `Detected platform: **${platformName}**  `,
+      `Package tier: **${package_tier.toUpperCase()}**  `,
+      `Generated: ${today}`,
+      ``,
+      `This guide covers three disciplines: **SEO** (traditional search), **AEO** (AI answer engines), and **GEO** (AI-generated search results). Complete the quick start first; tackle the rest in order.`,
+      ``,
+      `---`,
+      ``,
+      `## Quick Start (5 minutes)`,
+      ``,
+      `1. Upload \`robots.txt\`, \`sitemap.xml\`, and \`llm.txt\` to your site root so they resolve at ${website_url}/robots.txt etc.`,
+      `2. Paste the contents of \`meta-tags.html\` into every page's <head> (or global head, depending on platform).`,
+      `3. Paste each \`schema-*.json\` into a <script type="application/ld+json"> block in <head>.`,
+      `4. Submit \`sitemap.xml\` in Google Search Console.`,
+      `5. Read \`seo-audit.md\` for your personalized quick-win list.`,
+      ``,
+      `---`,
+      ``,
+      `## 1. SEO Implementation`,
+      ``,
+      `### Platform-specific steps for ${platformName}`,
+      ``,
+      seoStepLines,
+      ``,
+      `### Validate`,
+      ``,
+      `- Run every schema file through https://validator.schema.org and https://search.google.com/test/rich-results.`,
+      `- Use Google Search Console's URL Inspection tool to confirm canonical, indexing, and rich results status.`,
+      ``,
+      `## 2. AEO Implementation`,
+      ``,
+      `- **llm.txt** goes at the site root: ${website_url}/llm.txt. Some crawlers also check /.well-known/llm.txt — symlink or mirror if your host allows it.`,
+      `${package_tier === 'complete' ? `- **llms.txt** and **llms-full.txt** also go at the site root: ${website_url}/llms.txt, ${website_url}/llms-full.txt.\n- **.well-known/ai.json** goes at ${website_url}/.well-known/ai.json.` : ''}`,
+      `- Verify each file loads by visiting the URL in a private/incognito window. All must return HTTP 200.`,
+      `- In robots.txt, confirm the AI crawler directives match your stated preferences.`,
+      ``,
+      `## 3. GEO Implementation`,
+      ``,
+      package_tier === 'complete'
+        ? `- Open \`geo-content-brief.md\`. Use the **Brand Positioning Statement** as canonical copy in your About page, hero section, and PR boilerplate.\n- Publish the **Quotable Expert Answers** as a FAQ page on your site. AI systems preferentially cite FAQ-formatted content.\n- Work through \`topical-authority-plan.md\` month by month. Don't skip the internal linking map.\n- Reference \`entity-map.json\` when writing author bios, press kits, or bio pages — it's the canonical list of entities, claims, and relationships AI should associate with your brand.\n- Submit \`geo-qa-snippets.json\` structure to any AI-friendly directories or datasets your niche has.`
+        : `- Complete tier unlocks the GEO content brief, entity map, Q&A snippets, topical authority plan, and article schema template. Upgrade if you want structured GEO deliverables.`,
+      ``,
+      `## 4. Verification`,
+      ``,
+      `- Every schema JSON → Google Rich Results Test + schema.org validator.`,
+      `- \`sitemap.xml\` → Google Search Console submission.`,
+      `- \`seo-audit.md\` → work through the Quick Wins list in order.`,
+      `- Confirm OpenGraph tags render correctly using https://www.opengraph.xyz.`,
+      ``,
+      `## 5. Maintenance Schedule`,
+      ``,
+      `- **Quarterly:** re-run the generator so llm.txt, schema, and the GEO brief reflect your current offering, credibility signals, and proof points.`,
+      `- **On launch of any new product, program, or major hire:** re-run immediately.`,
+      `- **Annually:** review and reaffirm topic ownership (Q11) — topical authority compounds over time only if the topic set stays stable.`,
+      ``,
+      `## Support`,
+      ``,
+      `Questions? Contact: ${data.contactEmail || 'support'}`,
+      ``
+    ];
+    const implGuide = implGuideParts.join('\n');
     addFile('Implementation_Guide.md', implGuide);
 
     // ===== COMPLETE PACKAGE ADDITIONAL FILES =====
@@ -868,6 +987,323 @@ Deno.serve(async (req) => {
         }
         addFile('schema-localbusiness.json', JSON.stringify(schemaLocal, null, 2));
       }
+
+      // ===== GEO LAYER (Phase 3) =====
+
+      // Helpers used by multiple GEO files
+      const splitList = (s) => String(s || '').split(/[,\n]/).map(x => x.trim()).filter(Boolean);
+      const proofList = splitList(proofPoints);
+      const credibilityList = splitList(credibilitySignals);
+      const socialProofList = Array.isArray(ex.socialProofSignals) ? ex.socialProofSignals : [];
+      const topicList = splitList(topicOwnership);
+      const blogPostsArr = Array.isArray(ex.blogPosts) ? ex.blogPosts : [];
+      const scrapedFaqsArr = Array.isArray(ex.faqItems) ? ex.faqItems : [];
+
+      // geo-content-brief.md — the flagship GEO deliverable
+      const brandPositioning = (() => {
+        const base = coreDescription ? `${businessNameFinal} is ${coreDescription}` : `${businessNameFinal} operates at ${website_url}`;
+        const diff = competitorDiff ? ` Unlike others in the space, ${businessNameFinal} ${competitorDiff.replace(/^\W+/, '').replace(/\.$/, '')}.` : '';
+        const panel = knowledgePanel ? `\n\n${knowledgePanel}` : '';
+        return `${base}${base.endsWith('.') ? '' : '.'}${diff}${panel}`;
+      })();
+
+      const claimBlocks = [];
+      const allClaimSources = [
+        ...proofList.map(p => ({ claim: p, evidence: 'Reported by the business on the questionnaire (Q10 Proof Points).' })),
+        ...credibilityList.map(c => ({ claim: c, evidence: 'Reported by the business on the questionnaire (Q6 Credibility Signals).' })),
+        ...socialProofList.map(s => ({ claim: s, evidence: `Detected on ${website_url} by the scraper.` }))
+      ];
+      allClaimSources.slice(0, 5).forEach(({ claim, evidence }) => {
+        claimBlocks.push(`**CLAIM:** ${claim}\n**EVIDENCE:** ${evidence}`);
+      });
+
+      const quotableAnswers = [];
+      scrapedFaqsArr.slice(0, 3).forEach(f => {
+        if (f?.q && f?.a) {
+          const shortAnswer = String(f.a).split(/(?<=[.!?])\s+/).slice(0, 3).join(' ');
+          quotableAnswers.push(`**Q:** ${f.q}\n\n**A (quotable):** ${shortAnswer}`);
+        }
+      });
+      if (commonQuestion && quotableAnswers.length < 5) {
+        const sourcePhrase = priorityMessage || coreDescription || `${businessNameFinal} addresses this on ${website_url}`;
+        const shortSource = String(sourcePhrase).split(/(?<=[.!?])\s+/).slice(0, 2).join(' ');
+        quotableAnswers.push(`**Q:** ${commonQuestion}\n\n**A (quotable):** ${shortSource}`);
+      }
+      if (misconceptions && quotableAnswers.length < 5) {
+        const short = String(misconceptions).split(/(?<=[.!?])\s+/).slice(0, 2).join(' ');
+        quotableAnswers.push(`**Q:** What's a common misconception about ${businessNameFinal}?\n\n**A (quotable):** ${short}`);
+      }
+
+      const eeatChecklist = [
+        `- Add a visible author bio to every blog post that links to the About page (ties to schema-person.json).`,
+        `- Display credentials, certifications, and affiliations prominently on the About or bio page.`,
+        `- Publish at least one case study per topic cluster with named clients and quantified results.`,
+        `- Earn external citations: guest posts, podcast appearances, trade press mentions, and industry awards.`,
+        `- Collect reviews on Google Business Profile, Trustpilot, or an industry-specific review site.`,
+        `- Keep content dated: add dateModified to articles so crawlers see freshness signals.`
+      ].join('\n');
+
+      const differentiationMatrix = competitorDiff
+        ? [
+            `| Factor | ${businessNameFinal} | Typical alternative |`,
+            `|--------|---------------------|--------------------|`,
+            `| Primary differentiator | ${competitorDiff.split(/[.\n]/)[0].trim()} | Generic offering in this category |`,
+            ...(topicList.slice(0, 3).map(t => `| ${t} | Dedicated focus | Surface-level coverage |`))
+          ].join('\n')
+        : `*No differentiation statement captured (Q12 was skipped). Add it to sharpen how AI systems position you when recommending.*`;
+
+      const contentRecommendations = (() => {
+        const recs = [];
+        const coveredTitles = blogPostsArr.map(p => String(p.title || '').toLowerCase());
+        topicList.slice(0, 5).forEach(topic => {
+          const isCovered = coveredTitles.some(t => t.includes(topic.toLowerCase()));
+          recs.push(`- **${topic}** — ${isCovered ? `Existing blog coverage found; strengthen with a case study + FAQ pair for this topic.` : `No blog coverage detected. Publish a pillar article + 3 supporting FAQs to stake the authority claim.`}`);
+        });
+        if (recs.length === 0) {
+          recs.push(`- *No topic ownership captured (Q11 was skipped). Recommend answering Q11 to get targeted content recommendations.*`);
+        }
+        return recs.join('\n');
+      })();
+
+      const geoContentBrief = [
+        `# GEO Content Brief — ${businessNameFinal}`,
+        ``,
+        `Source: ${website_url}  `,
+        `Generated: ${today}`,
+        ``,
+        `This brief gives you the citation-ready content blocks that AI-generated search results (Google AI Overviews, Bing Copilot, Perplexity) pull from when recommending businesses. Treat the claim blocks and quotable answers below as canonical copy for landing pages, blog intros, and PR placements.`,
+        ``,
+        `---`,
+        ``,
+        `## 1. Brand Positioning Statement`,
+        ``,
+        brandPositioning,
+        ``,
+        `## 2. Citable Claim Blocks`,
+        ``,
+        claimBlocks.length > 0 ? claimBlocks.join('\n\n') : `*No claims captured. Answer Q6 (credibility signals) or Q10 (proof points) to generate citation-ready statistics.*`,
+        ``,
+        `## 3. Quotable Expert Answers`,
+        ``,
+        quotableAnswers.length > 0 ? quotableAnswers.join('\n\n') : `*No Q&A captured. Answer Q8 (common question) and Q9 (misconceptions) to generate quotable content.*`,
+        ``,
+        `## 4. E-E-A-T Signal Checklist`,
+        ``,
+        eeatChecklist,
+        ``,
+        `## 5. Differentiation Matrix`,
+        ``,
+        differentiationMatrix,
+        ``,
+        `## 6. Content Recommendations`,
+        ``,
+        contentRecommendations,
+        ``,
+        `---`,
+        ``,
+        `*This brief pairs with entity-map.json, geo-qa-snippets.json, and topical-authority-plan.md. Re-generate the package quarterly or whenever your offering changes.*`
+      ].join('\n');
+      addFile('geo-content-brief.md', geoContentBrief);
+
+      // entity-map.json — structured knowledge graph for LLM consumption
+      const entityMap = {
+        primaryEntity: {
+          type: "Organization",
+          name: businessNameFinal,
+          url: website_url,
+          description: coreDescription || knowledgePanel || ""
+        },
+        people: [],
+        products: [],
+        topics: topicList.map(name => ({ name, relationship: "authority" })),
+        frameworks: splitList(frameworksLine).map(name => ({ name, description: `${name} is a proprietary methodology used by ${businessNameFinal}.` })),
+        claims: allClaimSources.slice(0, 10).map(({ claim, evidence }) => ({
+          statement: claim,
+          evidence,
+          source: businessNameFinal
+        })),
+        relationships: []
+      };
+      if (personName) {
+        entityMap.people.push({
+          type: "Person",
+          name: personName,
+          role: ex.founderRole || "",
+          expertise: topicList,
+          credentials: credibilityList.slice(0, 10)
+        });
+        entityMap.relationships.push({
+          from: personName,
+          to: businessNameFinal,
+          type: ex.founderRole ? `${ex.founderRole} of` : "founder of"
+        });
+      }
+      if (Array.isArray(ex.namedProductsWithDesc) && ex.namedProductsWithDesc.length > 0) {
+        ex.namedProductsWithDesc.forEach(p => {
+          if (p?.name) entityMap.products.push({ name: p.name, description: p.description || "" });
+        });
+      } else if (productsLine) {
+        splitList(productsLine).forEach(p => entityMap.products.push({ name: p, description: "" }));
+      }
+      entityMap.products.forEach(p => {
+        entityMap.relationships.push({ from: businessNameFinal, to: p.name, type: "offers" });
+      });
+      entityMap.topics.forEach(t => {
+        entityMap.relationships.push({ from: businessNameFinal, to: t.name, type: "authority on" });
+      });
+      addFile('entity-map.json', JSON.stringify(entityMap, null, 2));
+
+      // geo-qa-snippets.json — quotable Q&A pairs designed for AI Overview citation
+      const qaSnippets = [];
+      scrapedFaqsArr.forEach(f => {
+        if (!f?.q || !f?.a || qaSnippets.length >= 15) return;
+        const answerText = String(f.a).replace(/\s+/g, ' ').trim();
+        const citationText = answerText.split(/(?<=[.!?])\s+/).slice(0, 2).join(' ').slice(0, 240);
+        qaSnippets.push({
+          question: String(f.q).trim(),
+          answer: answerText,
+          category: "faq",
+          source: businessNameFinal,
+          citationText
+        });
+      });
+      if (commonQuestion) {
+        const answerText = priorityMessage || coreDescription || `${businessNameFinal} addresses this directly at ${website_url}.`;
+        qaSnippets.push({
+          question: commonQuestion,
+          answer: answerText,
+          category: "faq",
+          source: businessNameFinal,
+          citationText: answerText.split(/(?<=[.!?])\s+/).slice(0, 2).join(' ').slice(0, 240)
+        });
+      }
+      if (misconceptions) {
+        const answerText = String(misconceptions).replace(/\s+/g, ' ').trim();
+        qaSnippets.push({
+          question: `What's a common misconception about ${businessNameFinal}?`,
+          answer: answerText,
+          category: "misconception",
+          source: businessNameFinal,
+          citationText: answerText.split(/(?<=[.!?])\s+/).slice(0, 2).join(' ').slice(0, 240)
+        });
+      }
+      if (competitorDiff) {
+        const answerText = String(competitorDiff).replace(/\s+/g, ' ').trim();
+        qaSnippets.push({
+          question: `How is ${businessNameFinal} different from others?`,
+          answer: answerText,
+          category: "comparison",
+          source: businessNameFinal,
+          citationText: answerText.split(/(?<=[.!?])\s+/).slice(0, 2).join(' ').slice(0, 240)
+        });
+      }
+      if (frameworksLine) {
+        const answerText = `${businessNameFinal} uses proprietary methodologies: ${frameworksLine}.`;
+        qaSnippets.push({
+          question: `How does ${businessNameFinal} work?`,
+          answer: answerText,
+          category: "how-it-works",
+          source: businessNameFinal,
+          citationText: answerText.slice(0, 240)
+        });
+      }
+      addFile('geo-qa-snippets.json', JSON.stringify(qaSnippets, null, 2));
+
+      // topical-authority-plan.md
+      const topicClusters = (topicList.length > 0 ? topicList : (Array.isArray(ex.industryKeywords) ? ex.industryKeywords.slice(0, 5) : []))
+        .slice(0, 8)
+        .map((topic) => {
+          const covered = blogPostsArr.some(p => String(p.title || '').toLowerCase().includes(topic.toLowerCase()));
+          return [
+            `### ${topic}`,
+            ``,
+            `**Pillar topic:** ${topic}`,
+            `**Suggested subtopics:**`,
+            `- Fundamentals and core definitions for ${topic}`,
+            `- ${businessNameFinal}'s point of view on ${topic}`,
+            `- Case studies and proof points in ${topic}`,
+            `- Common questions and misconceptions about ${topic}`,
+            `- Comparison: ${topic} vs adjacent topics`,
+            ``,
+            `**Content gap:** ${covered ? 'Existing blog coverage found. Strengthen with pillar depth and internal links.' : 'No blog coverage detected. Publish at least 1 pillar article + 3 supporting FAQs.'}`,
+            `**Recommended content types:** pillar blog post, FAQ page, case study, comparison article.`
+          ].join('\n');
+        })
+        .join('\n\n');
+
+      const authoritySignals = [
+        `- Guest appearances on podcasts within ${topicList[0] || 'your niche'}.`,
+        `- Backlinks from trade publications, industry blogs, and partner sites.`,
+        `- Quotes in press or newsletters focused on ${topicList[1] || 'your space'}.`,
+        `- Speaker slots at relevant conferences or virtual summits.`,
+        `- Citations in research reports, whitepapers, or "best of" roundups.`
+      ].join('\n');
+
+      const ninetyDay = [
+        `**Month 1 — Pillar content.** Publish one pillar article per top-priority topic cluster (aim for 1,500–2,500 words). Link to existing pages and to schema-faqpage.json content.`,
+        `**Month 2 — Supporting content.** Produce 3–5 supporting FAQs or short posts per pillar. Update entity-map.json if new products, topics, or people emerge.`,
+        `**Month 3 — Authority building.** Pitch guest posts, podcast appearances, and press mentions targeting the authority signals above. Update geo-qa-snippets.json with any new quotable answers you produce.`
+      ].join('\n\n');
+
+      const topicalAuthorityMd = [
+        `# Topical Authority Plan — ${businessNameFinal}`,
+        ``,
+        `Generated: ${today}`,
+        ``,
+        `This plan is the content roadmap that pairs with your schema, llm.txt, and GEO brief. Execute in order. AI systems reward consistent, deep coverage of a focused topic set — not broad, shallow coverage.`,
+        ``,
+        `---`,
+        ``,
+        `## 1. Topic Clusters`,
+        ``,
+        topicClusters || `*No topics captured. Answer Q11 (topic ownership) to generate a targeted cluster plan.*`,
+        ``,
+        `## 2. Authority Signals to Build`,
+        ``,
+        authoritySignals,
+        ``,
+        `## 3. Internal Linking Map`,
+        ``,
+        `- Every pillar article links to its supporting FAQs and case studies, and vice versa.`,
+        `- Each topic cluster links to the About page (schema-person.json) to reinforce E-E-A-T.`,
+        `- Cross-link related topics with descriptive anchor text, not "click here".`,
+        ``,
+        `## 4. 90-Day Action Plan`,
+        ``,
+        ninetyDay,
+        ``,
+        `---`,
+        ``,
+        `*Refresh this plan every quarter. Re-run the generator after publishing new pillar content so the scraper picks up your progress.*`
+      ].join('\n');
+      addFile('topical-authority-plan.md', topicalAuthorityMd);
+
+      // schema-article.json — reusable Article template
+      const schemaArticleTemplate = {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": "[REPLACE WITH POST TITLE]",
+        "description": "[REPLACE WITH 150-CHARACTER SUMMARY]",
+        "image": "[REPLACE WITH ARTICLE HERO IMAGE URL]",
+        "datePublished": "[REPLACE WITH ISO DATE e.g. 2026-01-15]",
+        "dateModified": "[REPLACE WITH ISO DATE e.g. 2026-01-15]",
+        "author": {
+          "@type": "Person",
+          "name": personName || ex.founderName || "[REPLACE WITH AUTHOR NAME]",
+          "url": `${website_url.replace(/\/$/, '')}/about`
+        },
+        "publisher": {
+          "@type": "Organization",
+          "name": businessNameFinal,
+          "url": website_url,
+          ...(ex.logoUrl ? { "logo": { "@type": "ImageObject", "url": ex.logoUrl } } : {})
+        },
+        "mainEntityOfPage": {
+          "@type": "WebPage",
+          "@id": "[REPLACE WITH CANONICAL POST URL]"
+        }
+      };
+      addFile('schema-article.json', JSON.stringify(schemaArticleTemplate, null, 2));
 
       // 15. Verification_Checklist.md
       const checklist = `# AEO Implementation Verification Checklist\n\n## Pre-Implementation\n- [ ] Backup current website files\n- [ ] Review all generated files\n- [ ] Plan upload schedule\n\n## File Upload Verification\n- [ ] llm.txt accessible at ${website_url}/llm.txt\n- [ ] llms.txt accessible at ${website_url}/llms.txt\n- [ ] llms-full.txt accessible at ${website_url}/llms-full.txt\n- [ ] robots.txt accessible at ${website_url}/robots.txt\n- [ ] ai-sitemap.xml accessible at ${website_url}/ai-sitemap.xml\n- [ ] humans.txt accessible at ${website_url}/humans.txt\n- [ ] security.txt accessible at ${website_url}/security.txt\n- [ ] .well-known/ai.json accessible\n\n## Schema Implementation\n- [ ] schema-organization.json added to site\n- [ ] schema-website.json added to site\n- [ ] schema-webpage.json added to site\n${data.hasPhysicalLocation === 'yes' ? '- [ ] schema-localbusiness.json added to site\n' : ''}\n- [ ] Tested with Google Rich Results Test\n- [ ] No validation errors\n\n## AI Crawler Configuration\n- [ ] robots.txt allows desired AI crawlers\n- [ ] Sitemap submitted to search engines\n- [ ] AI crawler permissions verified\n\n## Testing\n- [ ] All files return 200 status code\n- [ ] Schema validates without errors\n- [ ] Mobile-friendly test passed\n- [ ] Page speed acceptable\n\n## Post-Implementation\n- [ ] Monitor crawl stats\n- [ ] Set calendar reminder for updates\n- [ ] Document any custom changes\n\nCompleted: ___/___/___\nBy: _______________\n`;
