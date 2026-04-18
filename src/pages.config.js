@@ -47,9 +47,12 @@
  *
  * The mainPage value must match a key in the PAGES object exactly.
  */
+import AccountCancel from './pages/AccountCancel';
 import Admin from './pages/Admin';
+import ChangePassword from './pages/ChangePassword';
 import Dashboard from './pages/Dashboard';
 import GenerationProgress from './pages/GenerationProgress';
+import Login from './pages/Login';
 import MyGenerations from './pages/MyGenerations';
 import OrderBump from './pages/OrderBump';
 import PaymentSuccess from './pages/PaymentSuccess';
@@ -66,6 +69,7 @@ export const PAGES = {
     "Admin": Admin,
     "Dashboard": Dashboard,
     "GenerationProgress": GenerationProgress,
+    "Login": Login,
     "MyGenerations": MyGenerations,
     "OrderBump": OrderBump,
     "PaymentSuccess": PaymentSuccess,
@@ -73,12 +77,15 @@ export const PAGES = {
     "Questionnaire": Questionnaire,
     "Review": Review,
     "UpgradeSuccess": UpgradeSuccess,
+    "account/cancel": AccountCancel,
+    "account/password": ChangePassword,
     "file-generator": fileGenerator,
     "new-generation": newGeneration,
+    "login": Login,
 }
 
 export const pagesConfig = {
-    mainPage: "Admin",
+    mainPage: "Pricing",
     Pages: PAGES,
     Layout: __Layout,
 };

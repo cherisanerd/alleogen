@@ -7,19 +7,29 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
+import TokenLanding from './pages/TokenLanding';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
 const MainPage = mainPageKey ? Pages[mainPageKey] : <></>;
+
+// Pages that render outside the authenticated shell. These also skip the
+// Layout wrapper so they don't require a logged-in user.
+const PUBLIC_ROUTES = new Set(['Login', 'login', 'Pricing', 'new-generation', 'file-generator']);
 
 const LayoutWrapper = ({ children, currentPageName }) => Layout ?
   <Layout currentPageName={currentPageName}>{children}</Layout>
   : <>{children}</>;
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const { isLoadingAuth, isLoadingPublicSettings, authError } = useAuth();
+  const path = typeof window !== 'undefined' ? window.location.pathname : '';
+  // BASE_URL is '/tools/alleogen/' in prod and '/' in dev — trim it.
+  const basePath = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
+  const relPath = path.startsWith(basePath) ? path.slice(basePath.length) : path;
+  const firstSegment = (relPath.split('/').filter(Boolean)[0] || '').toLowerCase();
+  const isPublic = PUBLIC_ROUTES.has(firstSegment) || firstSegment === 'g' || firstSegment === '';
 
-  // Show loading spinner while checking app public settings or auth
   if (isLoadingPublicSettings || isLoadingAuth) {
     return (
       <div className="fixed inset-0 flex items-center justify-center">
@@ -28,18 +38,10 @@ const AuthenticatedApp = () => {
     );
   }
 
-  // Handle authentication errors
-  if (authError) {
-    if (authError.type === 'user_not_registered') {
-      return <UserNotRegisteredError />;
-    } else if (authError.type === 'auth_required') {
-      // Redirect to login automatically
-      navigateToLogin();
-      return null;
-    }
+  if (!isPublic && authError?.type === 'user_not_registered') {
+    return <UserNotRegisteredError />;
   }
 
-  // Render the main app
   return (
     <Routes>
       <Route path="/" element={
@@ -47,12 +49,13 @@ const AuthenticatedApp = () => {
           <MainPage />
         </LayoutWrapper>
       } />
-      {Object.entries(Pages).map(([path, Page]) => (
+      <Route path="/g/:token" element={<TokenLanding />} />
+      {Object.entries(Pages).map(([routePath, Page]) => (
         <Route
-          key={path}
-          path={`/${path}`}
+          key={routePath}
+          path={`/${routePath}`}
           element={
-            <LayoutWrapper currentPageName={path}>
+            <LayoutWrapper currentPageName={routePath}>
               <Page />
             </LayoutWrapper>
           }
