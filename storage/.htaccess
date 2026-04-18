@@ -1,0 +1,4 @@
+# Deny ALL direct web access to the storage directory.
+# Zip downloads are served through a PHP endpoint that checks
+# the access_token and streams the file — never directly.
+Require all denied

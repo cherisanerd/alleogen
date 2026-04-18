@@ -13,6 +13,7 @@ const SECTIONS = [
   { label: 'Your Business', number: 1 },
   { label: 'Your Authority', number: 2 },
   { label: 'For AI Systems', number: 3 },
+  { label: 'For Search & Citations', number: 4 },
 ];
 
 function buildScrapedDefaults(extracted, userEmail) {
@@ -38,6 +39,10 @@ function buildScrapedDefaults(extracted, userEmail) {
     priorityMessage: '',
     commonQuestion: '',
     misconceptions: '',
+    proofPoints: '',
+    topicOwnership: '',
+    competitorDiff: '',
+    knowledgePanel: '',
     // Silent scraped context for file generation
     contactEmail: extracted.contactEmail || userEmail || '',
     address: extracted.address || '',
@@ -380,6 +385,84 @@ export default function Questionnaire() {
                       placeholder="AI systems will use this to give accurate answers about you."
                       maxLength={400}
                     />
+                  </QuestionBlock>
+                </motion.div>
+              )}
+
+              {/* SECTION 4: For Search & Citations */}
+              {currentSection === 3 && (
+                <motion.div key="s4" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-8">
+
+                  {/* Q10 */}
+                  <QuestionBlock
+                    number="Q10"
+                    label="What specific numbers or results can you share?"
+                    optional
+                    hint="Revenue generated for clients, years in business, number of students served, certifications held. These become citable statistics in your AI files."
+                    onSkip={() => skipField('proofPoints')}
+                  >
+                    <Textarea
+                      value={answers.proofPoints || ''}
+                      onChange={(e) => updateAnswer('proofPoints', e.target.value)}
+                      className="min-h-[100px]"
+                      placeholder="e.g., Helped 500+ coaches scale past $100k, 12 years in business, featured in Forbes."
+                      maxLength={500}
+                    />
+                    <p className="text-xs text-[#180029]/50">{(answers.proofPoints || '').length}/500</p>
+                  </QuestionBlock>
+
+                  {/* Q11 */}
+                  <QuestionBlock
+                    number="Q11"
+                    label="What 3–5 topics should you be THE go-to expert on?"
+                    optional
+                    hint="Think about what you want AI systems to recommend you for. These become your topical authority clusters."
+                    onSkip={() => skipField('topicOwnership')}
+                  >
+                    <Textarea
+                      value={answers.topicOwnership || ''}
+                      onChange={(e) => updateAnswer('topicOwnership', e.target.value)}
+                      className="min-h-[90px]"
+                      placeholder="e.g., Launch strategy for coaches, AI-assisted marketing, systematizing service businesses."
+                      maxLength={400}
+                    />
+                    <p className="text-xs text-[#180029]/50">{(answers.topicOwnership || '').length}/400</p>
+                  </QuestionBlock>
+
+                  {/* Q12 */}
+                  <QuestionBlock
+                    number="Q12"
+                    label="What makes you different from others in your space?"
+                    optional
+                    hint="AI systems compare options when recommending. This helps them position you accurately."
+                    onSkip={() => skipField('competitorDiff')}
+                  >
+                    <Textarea
+                      value={answers.competitorDiff || ''}
+                      onChange={(e) => updateAnswer('competitorDiff', e.target.value)}
+                      className="min-h-[90px]"
+                      placeholder="What's your angle? The thing nobody else does the way you do it."
+                      maxLength={400}
+                    />
+                    <p className="text-xs text-[#180029]/50">{(answers.competitorDiff || '').length}/400</p>
+                  </QuestionBlock>
+
+                  {/* Q13 */}
+                  <QuestionBlock
+                    number="Q13"
+                    label="What should appear when someone Googles your name or business name?"
+                    optional
+                    hint="This shapes the Person and Organization schema that feeds Google's Knowledge Panel."
+                    onSkip={() => skipField('knowledgePanel')}
+                  >
+                    <Textarea
+                      value={answers.knowledgePanel || ''}
+                      onChange={(e) => updateAnswer('knowledgePanel', e.target.value)}
+                      className="min-h-[90px]"
+                      placeholder="One paragraph describing who you are and what you're known for."
+                      maxLength={400}
+                    />
+                    <p className="text-xs text-[#180029]/50">{(answers.knowledgePanel || '').length}/400</p>
                   </QuestionBlock>
                 </motion.div>
               )}

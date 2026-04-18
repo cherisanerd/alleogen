@@ -1,0 +1,26 @@
+{
+    "name": "cherisanerd/alleogen",
+    "description": "AEO + SEO + GEO file generator — self-hosted PHP backend.",
+    "type": "project",
+    "license": "proprietary",
+    "require": {
+        "php": ">=8.0",
+        "ext-pdo_mysql": "*",
+        "ext-curl": "*",
+        "ext-zip": "*",
+        "ext-json": "*",
+        "stripe/stripe-php": "^13.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Alleogen\\": "api/src/"
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "sort-packages": true
+    },
+    "scripts": {
+        "lint": "find api -type f -name '*.php' -not -path 'api/vendor/*' -exec php -l {} \\;"
+    }
+}

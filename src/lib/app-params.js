@@ -1,54 +1,49 @@
+/**
+ * Lightweight app parameter handling for the self-hosted build.
+ *
+ * Replaces the former Base44 SDK appId/token dance. The only parameter
+ * the app reads from the URL now is `token` — used when Stripe
+ * redirects a one-timer to /payment-success?token=... or when a token
+ * link opens /g/:token. The token is cached in localStorage so page
+ * refreshes keep working.
+ *
+ * Kept named `appParams` for drop-in compatibility with the old
+ * imports throughout the codebase.
+ */
+
 const isNode = typeof window === 'undefined';
-const windowObj = isNode ? { localStorage: new Map() } : window;
-const storage = windowObj.localStorage;
+const TOKEN_KEY = 'alleogen_access_token';
 
-const toSnakeCase = (str) => {
-	return str.replace(/([A-Z])/g, '_$1').toLowerCase();
-}
+const readStoredToken = () => {
+  if (isNode) return null;
+  try { return window.localStorage.getItem(TOKEN_KEY); } catch { return null; }
+};
 
-const getAppParamValue = (paramName, { defaultValue = undefined, removeFromUrl = false } = {}) => {
-	if (isNode) {
-		return defaultValue;
-	}
-	const storageKey = `base44_${toSnakeCase(paramName)}`;
-	const urlParams = new URLSearchParams(window.location.search);
-	const searchParam = urlParams.get(paramName);
-	if (removeFromUrl) {
-		urlParams.delete(paramName);
-		const newUrl = `${window.location.pathname}${urlParams.toString() ? `?${urlParams.toString()}` : ""
-			}${window.location.hash}`;
-		window.history.replaceState({}, document.title, newUrl);
-	}
-	if (searchParam) {
-		storage.setItem(storageKey, searchParam);
-		return searchParam;
-	}
-	if (defaultValue) {
-		storage.setItem(storageKey, defaultValue);
-		return defaultValue;
-	}
-	const storedValue = storage.getItem(storageKey);
-	if (storedValue) {
-		return storedValue;
-	}
-	return null;
-}
+const persistToken = (token) => {
+  if (isNode || !token) return;
+  try { window.localStorage.setItem(TOKEN_KEY, token); } catch {}
+};
 
-const getAppParams = () => {
-	if (getAppParamValue("clear_access_token") === 'true') {
-		storage.removeItem('base44_access_token');
-		storage.removeItem('token');
-	}
-	return {
-		appId: getAppParamValue("app_id", { defaultValue: import.meta.env.VITE_BASE44_APP_ID }),
-		token: getAppParamValue("access_token", { removeFromUrl: true }),
-		fromUrl: getAppParamValue("from_url", { defaultValue: window.location.href }),
-		functionsVersion: getAppParamValue("functions_version", { defaultValue: import.meta.env.VITE_BASE44_FUNCTIONS_VERSION }),
-		appBaseUrl: getAppParamValue("app_base_url", { defaultValue: import.meta.env.VITE_BASE44_APP_BASE_URL }),
-	}
-}
+const readUrlToken = () => {
+  if (isNode) return null;
+  const params = new URLSearchParams(window.location.search);
+  const fromQuery = params.get('token') || params.get('access_token');
+  if (fromQuery) {
+    persistToken(fromQuery);
+    // Strip the token from the URL so it doesn't end up in browser history.
+    params.delete('token');
+    params.delete('access_token');
+    const newQs = params.toString();
+    const newUrl = `${window.location.pathname}${newQs ? `?${newQs}` : ''}${window.location.hash}`;
+    window.history.replaceState({}, document.title, newUrl);
+    return fromQuery;
+  }
+  return null;
+};
 
+const resolveToken = () => readUrlToken() || readStoredToken();
 
 export const appParams = {
-	...getAppParams()
-}
+  token: resolveToken(),
+  fromUrl: isNode ? null : window.location.href,
+};

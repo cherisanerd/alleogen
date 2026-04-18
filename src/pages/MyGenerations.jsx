@@ -54,6 +54,18 @@ export default function MyGenerations() {
     return colors[status] || 'bg-gray-100 text-gray-700';
   };
 
+  // Both tiers produce SEO + AEO files; Complete is the one that produces
+  // the GEO layer (content brief, entity map, Q&A snippets, topical plan).
+  const disciplinesFor = (tier) => {
+    if (tier === 'complete') return ['SEO', 'AEO', 'GEO'];
+    return ['SEO', 'AEO'];
+  };
+  const disciplineStyle = {
+    SEO: 'bg-emerald-100 text-emerald-800',
+    AEO: 'bg-blue-100 text-blue-800',
+    GEO: 'bg-purple-100 text-purple-800'
+  };
+
   const handleDownload = async (generation) => {
     try {
       await base44.entities.Generation.update(generation.id, {
@@ -89,7 +101,7 @@ export default function MyGenerations() {
                 My Generations
               </h1>
               <p className="text-[#180029]/60 text-lg">
-                View and download your AEO packages
+                View and download your SEO + AEO + GEO packages
               </p>
             </div>
             <Button
@@ -126,7 +138,7 @@ export default function MyGenerations() {
                   <Card className="p-6 border-2 border-gray-200 hover:border-[#7700CC]/30 transition-colors">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-grow">
-                        <div className="flex items-center gap-3 mb-3">
+                        <div className="flex items-center gap-2 flex-wrap mb-3">
                           <h3 className="heading text-xl font-semibold text-[#180029]">
                             {gen.business_name || 'Unnamed Business'}
                           </h3>
@@ -136,6 +148,15 @@ export default function MyGenerations() {
                           <span className="px-3 py-1 bg-[#7700CC]/10 text-[#7700CC] rounded-full text-xs font-medium uppercase">
                             {gen.package_tier}
                           </span>
+                          {gen.status === 'completed' && disciplinesFor(gen.package_tier).map(d => (
+                            <span
+                              key={d}
+                              className={`px-2 py-0.5 rounded-full text-xs font-semibold ${disciplineStyle[d]}`}
+                              title={`${d} coverage included in this package`}
+                            >
+                              {d}
+                            </span>
+                          ))}
                         </div>
                         
                         <div className="space-y-2 text-sm text-[#180029]/70">
