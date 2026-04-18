@@ -28,3 +28,31 @@ dist-ssr
 *.sw?
 
 .env
+
+# PHP backend
+# vendor/ IS committed per deployment choice (shared hosting friendly),
+# but we exclude non-runtime files — docs (which can contain example
+# keys that trigger GitHub's secret scanner), tests, CI metadata.
+vendor/**/*.md
+vendor/**/README*
+vendor/**/CHANGELOG*
+vendor/**/UPGRADING*
+vendor/**/CONTRIBUTING*
+vendor/**/SECURITY*
+vendor/**/LICENSE*
+vendor/**/.github/
+vendor/**/tests/
+vendor/**/test/
+vendor/**/.editorconfig
+vendor/**/.php-cs-fixer*
+vendor/**/phpunit.xml*
+vendor/**/psalm*
+vendor/**/phpstan*
+
+# Local secrets MUST NEVER be committed.
+/api/config.local.php
+
+# Generated zip files — runtime artifacts. Do not commit. The directory
+# itself is tracked via storage/zips/.gitkeep.
+/storage/zips/*
+!/storage/zips/.gitkeep
