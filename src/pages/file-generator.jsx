@@ -2,9 +2,8 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Download, FileText, Loader2, Sparkles } from "lucide-react";
+import { Download, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function FileGenerator() {

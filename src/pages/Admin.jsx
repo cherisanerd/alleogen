@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Users, CreditCard, Loader2, Search, Plus, FileText, X, Download, ExternalLink, Tag, Trash2, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Loader2, Search, Plus, FileText, X, Download, ExternalLink, Tag, Trash2, ToggleLeft, ToggleRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function Admin() {
