@@ -49,6 +49,7 @@
  */
 import AccountCancel from './pages/AccountCancel';
 import Admin from './pages/Admin';
+import AdminSettings from './pages/AdminSettings';
 import ChangePassword from './pages/ChangePassword';
 import Dashboard from './pages/Dashboard';
 import GenerationProgress from './pages/GenerationProgress';
@@ -67,6 +68,7 @@ import __Layout from './Layout.jsx';
 
 export const PAGES = {
     "Admin": Admin,
+    "admin/settings": AdminSettings,
     "Dashboard": Dashboard,
     "GenerationProgress": GenerationProgress,
     "Login": Login,
