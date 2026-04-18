@@ -1,25 +1,29 @@
 <?php
 /**
  * POST /api/generations/generate
- * Body: { "generation_id": 123 }  OR  Authorization: Bearer <access_token>
  *
- * Consumes a credit (if subscriber) and builds the package. Writes the
- * zip to STORAGE_PATH and the files_data JSON to the DB.
+ * Runs the TypeScript generator (generator.ts) as a Deno subprocess,
+ * pipes the generation + analysis + questionnaire data in, gets the
+ * generated files + base64 zip back, writes the zip to STORAGE_PATH,
+ * and updates the DB row.
+ *
+ * Host requirements:
+ *   - `deno` on PATH (set DENO_PATH in config.local.php to override)
+ *   - PHP shell_exec / proc_open permitted
+ *
+ * Auth: session (subscribers) or token (one-timers).
  */
 
 declare(strict_types=1);
 
 require_once __DIR__ . '/../config.php';
-require_once __DIR__ . '/generator.php';
 
 requireMethod('POST');
 
 $body = readJsonBody();
-
-// Resolve which generation we're building. Subscribers send id;
-// one-timers use Authorization: Bearer <token>.
 $pdo = getDB();
 
+// -------- Resolve the generation row + access control --------
 $genId = isset($body['generation_id']) ? (int) $body['generation_id'] : 0;
 $auth = authenticateRequest();
 
@@ -37,7 +41,6 @@ if ($genId > 0) {
         jsonResponse(['error' => 'Access denied.'], 403);
     }
 } else {
-    // Token path (one-timer).
     if ($auth === null || $auth['type'] !== 'token') {
         jsonResponse(['error' => 'Authentication required.'], 401);
     }
@@ -52,7 +55,7 @@ if ($gen['status'] === 'generating') {
     jsonResponse(['error' => 'Generation is already in progress.'], 409);
 }
 
-// Consume a credit for subscribers on their first generation of this row.
+// -------- Credit consumption (subscribers, first run) --------
 $needsCredit = ($gen['purchase_type'] === 'subscription' && empty($gen['generated_at']));
 if ($needsCredit && $user !== null) {
     if ($user['subscription_status'] !== 'active') {
@@ -72,12 +75,12 @@ if ($needsCredit && $user !== null) {
     }
 }
 
-// Flip status to generating.
+// Flip status to generating so duplicate submissions 409.
 $stmt = $pdo->prepare("UPDATE alleogen_generations SET status = 'generating' WHERE id = :id");
 $stmt->execute([':id' => $gen['id']]);
 
-// Load the analysis (if any) for scraped context.
-$analysis = [];
+// -------- Assemble Deno subprocess input --------
+$analysis = null;
 if (!empty($gen['analysis_id'])) {
     $stmt = $pdo->prepare('SELECT * FROM alleogen_analyses WHERE id = :id');
     $stmt->execute([':id' => $gen['analysis_id']]);
@@ -85,7 +88,6 @@ if (!empty($gen['analysis_id'])) {
     if ($a !== false) $analysis = $a;
 }
 
-// questionnaire_data lives as JSON in the DB.
 $questionnaireRaw = $gen['questionnaire_data'] ?? null;
 $data = [];
 if (is_string($questionnaireRaw) && $questionnaireRaw !== '') {
@@ -95,26 +97,85 @@ if (is_string($questionnaireRaw) && $questionnaireRaw !== '') {
     $data = $questionnaireRaw;
 }
 
-try {
-    $result = generateFiles($gen, $analysis, $data);
-} catch (Throwable $e) {
-    logError('generator', 'generateFiles failed: ' . $e->getMessage(), $user['id'] ?? null, ['generation_id' => $gen['id']]);
-    $stmt = $pdo->prepare("UPDATE alleogen_generations SET status = 'failed' WHERE id = :id");
-    $stmt->execute([':id' => $gen['id']]);
+$input = [
+    'generation' => $gen,
+    'analysis'   => $analysis,
+    'data'       => $data,
+];
+
+// -------- Spawn Deno --------
+$denoPath = secret('deno_path', 'deno');
+$scriptPath = __DIR__ . '/generator.ts';
+if (!is_file($scriptPath)) {
+    markGenerationFailed($pdo, (int) $gen['id'], 'generator.ts missing');
+    jsonResponse(['error' => 'Generator script missing on server.'], 500);
+}
+
+$denoCmd = [
+    $denoPath,
+    'run',
+    '--no-prompt',
+    '--allow-read=' . $scriptPath,
+    $scriptPath,
+];
+
+$descriptors = [
+    0 => ['pipe', 'r'],  // stdin
+    1 => ['pipe', 'w'],  // stdout
+    2 => ['pipe', 'w'],  // stderr
+];
+
+$proc = proc_open($denoCmd, $descriptors, $pipes, __DIR__);
+if (!is_resource($proc)) {
+    markGenerationFailed($pdo, (int) $gen['id'], 'could not start deno');
+    jsonResponse(['error' => 'Could not start generator subprocess.'], 500);
+}
+
+fwrite($pipes[0], json_encode($input, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+fclose($pipes[0]);
+
+$stdout = stream_get_contents($pipes[1]);
+$stderr = stream_get_contents($pipes[2]);
+fclose($pipes[1]);
+fclose($pipes[2]);
+$exitCode = proc_close($proc);
+
+if ($exitCode !== 0 || $stdout === false || $stdout === '') {
+    logError('generator', "Deno generator exited {$exitCode}", $user['id'] ?? null, [
+        'generation_id' => $gen['id'],
+        'stderr'        => is_string($stderr) ? substr($stderr, 0, 2000) : '',
+    ]);
+    markGenerationFailed($pdo, (int) $gen['id'], 'deno exit ' . $exitCode);
     jsonResponse(['error' => 'File generation failed.'], 500);
 }
 
-// Persist the zip to STORAGE_PATH. Filename prefixed with the generation
-// id so two packages for the same business can coexist.
+$result = json_decode((string) $stdout, true);
+if (!is_array($result) || empty($result['success']) || !is_array($result['files'] ?? null) || !is_string($result['zip_base64'] ?? null)) {
+    logError('generator', 'Deno generator returned unexpected payload', $user['id'] ?? null, [
+        'generation_id' => $gen['id'],
+        'stdout_prefix' => substr((string) $stdout, 0, 500),
+    ]);
+    markGenerationFailed($pdo, (int) $gen['id'], 'bad generator output');
+    jsonResponse(['error' => 'File generation failed.'], 500);
+}
+
+// -------- Persist files + zip --------
+$zipBytes = base64_decode($result['zip_base64'], true);
+if ($zipBytes === false || $zipBytes === '') {
+    markGenerationFailed($pdo, (int) $gen['id'], 'bad zip encoding');
+    jsonResponse(['error' => 'File generation failed.'], 500);
+}
+
 if (!is_dir(STORAGE_PATH)) {
     @mkdir(STORAGE_PATH, 0750, true);
 }
-$onDiskName = (int) $gen['id'] . '_' . $result['zip_filename'];
+$zipFilename = (string) ($result['zip_filename'] ?? 'package.zip');
+$onDiskName = (int) $gen['id'] . '_' . basename($zipFilename);
 $diskPath = rtrim(STORAGE_PATH, '/') . '/' . $onDiskName;
-if (file_put_contents($diskPath, $result['zip_bytes']) === false) {
+
+if (file_put_contents($diskPath, $zipBytes) === false) {
     logError('generator', "Could not write zip to {$diskPath}", $user['id'] ?? null, ['generation_id' => $gen['id']]);
-    $stmt = $pdo->prepare("UPDATE alleogen_generations SET status = 'failed' WHERE id = :id");
-    $stmt->execute([':id' => $gen['id']]);
+    markGenerationFailed($pdo, (int) $gen['id'], 'could not write zip');
     jsonResponse(['error' => 'File generation failed (storage).'], 500);
 }
 
@@ -127,13 +188,24 @@ $stmt = $pdo->prepare(
      WHERE id = :id"
 );
 $stmt->execute([
-    ':files' => json_encode($result['files_data'], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+    ':files' => json_encode($result['files'], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
     ':zf'    => $onDiskName,
     ':id'    => $gen['id'],
 ]);
 
 jsonResponse([
     'success'      => true,
-    'file_count'   => count($result['files_data']),
-    'zip_filename' => $result['zip_filename'],
+    'file_count'   => (int) ($result['file_count'] ?? count($result['files'])),
+    'zip_filename' => $zipFilename,
 ], 200);
+
+
+// -------- helpers --------
+function markGenerationFailed(PDO $pdo, int $genId, string $why): void
+{
+    $stmt = $pdo->prepare("UPDATE alleogen_generations SET status = 'failed' WHERE id = :id");
+    $stmt->execute([':id' => $genId]);
+    // $why is already logged upstream via logError — duplicated here only
+    // as a defensive annotation in case logError was bypassed.
+    if ($why !== '') error_log("alleogen: generation {$genId} failed: {$why}");
+}

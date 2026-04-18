@@ -16,18 +16,36 @@ See `AEO_File_Generator_v2_PRD.md` for the full product spec.
 
 ## Architecture
 
-- **Frontend** — Vite + React + Tailwind + shadcn/ui in `src/`.
-- **Serverless functions** — Deno entry points in `base44/functions/` for `analyzeWebsite`, `generateFiles`, payment flows, and coupon application.
-- **State** — Generation + Analysis records stored via the Base44 SDK. `questionnaire_data` is a JSON blob on the Generation entity.
+- **Frontend** — Vite + React + Tailwind + shadcn/ui in `src/`. Built to `dist/` and served at `cherisanerd.com/tools/alleogen/`.
+- **Backend** — PHP 8.0+ REST API under `api/` against MySQL. One Composer dep (Stripe PHP SDK) committed under `vendor/`. Admin-configurable knobs in `alleogen_settings`; secrets in `api/config.local.php` (gitignored).
+- **File generator** — `api/generations/generator.ts` runs as a Deno subprocess spawned from `api/generations/generate.php`. The TS file is the single source of truth for generated file content. Deno pulls `jszip` on first run via the `npm:` specifier — no `npm install` / `node_modules` required.
+- **Billing** — Stripe for one-time purchases (direct), GoHighLevel as the source of truth for subscription billing (bidirectional webhooks).
+- **Storage** — Generated zips live in `storage/zips/` (web-denied by `.htaccess`) and are streamed through `api/generations/download.php`.
+
+### Server requirements
+
+- PHP 8.0+ with `pdo_mysql`, `curl`, `zip`, `json` extensions
+- MySQL 5.7+ or 8.0
+- `deno` on PATH (or set `deno_path` in `config.local.php`). Install: `curl -fsSL https://deno.land/install.sh | sh`
+- Cron (two jobs: reminders hourly, cleanup daily)
+- `shell_exec` / `proc_open` enabled (required to invoke Deno)
+- Write access to `storage/zips/`
+- Mail function or SMTP
 
 ## Development
 
-```
+```bash
+# Frontend
 npm install
-cp .env.local.example .env.local   # create this yourself with:
-#   VITE_BASE44_APP_ID=...
-#   VITE_BASE44_APP_BASE_URL=...
-npm run dev
+npm run dev                       # Vite dev server
+npm run build                     # build to dist/
+
+# Backend
+cp api/config.local.example.php api/config.local.php
+# edit api/config.local.php with DB + Stripe + GHL credentials
+mysql -u root -p < schema.sql     # apply DB schema
+composer install                  # if vendor/ was not pulled from git
+php -S 127.0.0.1:8000 -t .        # serve PHP + built SPA locally
 ```
 
 Scripts: `npm run dev`, `npm run build`, `npm run lint`, `npm run typecheck`.
