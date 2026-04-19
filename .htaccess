@@ -16,6 +16,11 @@ Options -Indexes
     RewriteEngine On
     RewriteBase /tools/alleogen/
 
+    # Stop immediately if the request IS the SPA entry point.
+    # Without this, the fallback rewrite below loops forever on some
+    # Apache/LiteSpeed configs (Bluehost included).
+    RewriteRule ^index\.html$ - [L]
+
     # API passes through.
     RewriteRule ^api/ - [L]
 
@@ -28,8 +33,10 @@ Options -Indexes
     RewriteCond %{REQUEST_FILENAME} -d
     RewriteRule ^ - [L]
 
-    # Otherwise, fall through to the SPA entry point.
-    RewriteRule . index.html [L]
+    # Otherwise, fall through to the SPA entry point. Absolute path
+    # (not bare 'index.html') so the rewrite target is unambiguous
+    # under any RewriteBase / subrequest combination.
+    RewriteRule . /tools/alleogen/index.html [L]
 </IfModule>
 
 # Cache static assets aggressively; they have hashed filenames from Vite.
