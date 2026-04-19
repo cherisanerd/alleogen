@@ -113,6 +113,11 @@ const auth = {
     }),
 
   redirectToLogin: (returnUrl) => {
+    // If we're already on the login page, don't kick off another
+    // redirect — otherwise repeated calls during render/effect cycles
+    // build up stacked `?return=<prev-url>` params and tip the browser
+    // into an exponentially-growing URL loop.
+    if (/\/login(\/|\?|$)/.test(window.location.pathname)) return;
     const ret = encodeURIComponent(returnUrl || window.location.href);
     window.location.href = `${import.meta.env.BASE_URL || '/tools/alleogen/'}login?return=${ret}`;
   },

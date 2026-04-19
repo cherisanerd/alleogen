@@ -17,10 +17,10 @@ export default function Layout({ children, currentPageName }) {
       const currentUser = await base44.auth.me();
       setUser(currentUser);
     } catch (error) {
-      // User not logged in
-      if (currentPageName !== 'FileGenerator') {
-        base44.auth.redirectToLogin();
-      }
+      // Layout only wraps protected pages now (LayoutWrapper in App.jsx
+      // skips Layout for public routes), so a 401 here means the session
+      // truly expired. Send to login, preserving the in-flight URL.
+      base44.auth.redirectToLogin();
     } finally {
       setLoading(false);
     }

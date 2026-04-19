@@ -13,13 +13,27 @@ const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
 const MainPage = mainPageKey ? Pages[mainPageKey] : <></>;
 
-// Pages that render outside the authenticated shell. These also skip the
-// Layout wrapper so they don't require a logged-in user.
-const PUBLIC_ROUTES = new Set(['Login', 'login', 'Pricing', 'new-generation', 'file-generator']);
+// Pages that don't require auth and therefore render WITHOUT the
+// Layout wrapper. The Layout's own auth check would otherwise bounce
+// them to /login and create a redirect loop (especially on /login
+// itself).
+const PUBLIC_ROUTES = new Set([
+  '',               // mainPage (Pricing)
+  'Login', 'login',
+  'Pricing',
+  'new-generation',
+  'file-generator',
+]);
 
-const LayoutWrapper = ({ children, currentPageName }) => Layout ?
-  <Layout currentPageName={currentPageName}>{children}</Layout>
-  : <>{children}</>;
+const isPublicRoute = (pageName) => {
+  const segment = (pageName || '').split('/')[0];
+  return PUBLIC_ROUTES.has(segment) || segment === 'g';
+};
+
+const LayoutWrapper = ({ children, currentPageName }) => {
+  if (!Layout || isPublicRoute(currentPageName)) return <>{children}</>;
+  return <Layout currentPageName={currentPageName}>{children}</Layout>;
+};
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError } = useAuth();
@@ -28,7 +42,7 @@ const AuthenticatedApp = () => {
   const basePath = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
   const relPath = path.startsWith(basePath) ? path.slice(basePath.length) : path;
   const firstSegment = (relPath.split('/').filter(Boolean)[0] || '').toLowerCase();
-  const isPublic = PUBLIC_ROUTES.has(firstSegment) || firstSegment === 'g' || firstSegment === '';
+  const isPublic = isPublicRoute(firstSegment) || firstSegment === '';
 
   if (isLoadingPublicSettings || isLoadingAuth) {
     return (
