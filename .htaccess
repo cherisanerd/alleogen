@@ -33,6 +33,12 @@ Options -Indexes
     RewriteCond %{REQUEST_FILENAME} -d
     RewriteRule ^ - [L]
 
+    # Static-asset extensions that are missing should 404 cleanly,
+    # not fall through to index.html. This prevents the confusing
+    # "MIME type text/html for JS module" error that happens when a
+    # stale bundle hash is referenced.
+    RewriteRule \.(js|mjs|css|map|ico|png|jpe?g|gif|svg|webp|woff2?|ttf|eot|otf|json|xml|txt)$ - [L,R=404]
+
     # Otherwise, fall through to the SPA entry point. Absolute path
     # (not bare 'index.html') so the rewrite target is unambiguous
     # under any RewriteBase / subrequest combination.
