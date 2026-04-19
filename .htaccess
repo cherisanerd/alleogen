@@ -7,6 +7,11 @@
 #   - static assets  → served as-is
 #   - everything else → rewritten to index.html so React Router owns it
 
+# Always serve the SPA entry point for directory requests, and never
+# let Apache show a directory listing even if our rewrite somehow misses.
+DirectoryIndex index.html index.php
+Options -Indexes
+
 <IfModule mod_rewrite.c>
     RewriteEngine On
     RewriteBase /tools/alleogen/
