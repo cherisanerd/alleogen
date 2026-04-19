@@ -11,9 +11,20 @@
 
 <IfModule mod_rewrite.c>
     RewriteEngine On
+    RewriteBase /tools/alleogen/api/
+
     # Prevent serving config.local.php under ANY circumstance, even if
     # FilesMatch above is bypassed by an unusual server config.
     RewriteRule ^config\.local\.php$ - [F,L]
+
+    # Extensionless URLs — the React client calls /api/auth/me etc.
+    # If the literal path doesn't exist as a file or directory, look
+    # for <path>.php and serve that. Lets /api/auth/me resolve to
+    # api/auth/me.php without changing any client code.
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME}\.php -f
+    RewriteRule ^(.+?)/?$ $1.php [L]
 </IfModule>
 
 # Default content type for JSON endpoints when PHP doesn't set one

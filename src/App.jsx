@@ -68,11 +68,14 @@ const AuthenticatedApp = () => {
 
 
 function App() {
+  // Vite injects BASE_URL as '/tools/alleogen/' in prod and '/' in dev.
+  // React Router wants the basename without a trailing slash.
+  const basename = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
 
   return (
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
-        <Router>
+        <Router basename={basename}>
           <NavigationTracker />
           <AuthenticatedApp />
         </Router>
