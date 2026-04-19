@@ -52,6 +52,7 @@ import Admin from './pages/Admin';
 import AdminSettings from './pages/AdminSettings';
 import ChangePassword from './pages/ChangePassword';
 import Dashboard from './pages/Dashboard';
+import ForgotPassword from './pages/ForgotPassword';
 import GenerationProgress from './pages/GenerationProgress';
 import Login from './pages/Login';
 import MyGenerations from './pages/MyGenerations';
@@ -59,6 +60,7 @@ import OrderBump from './pages/OrderBump';
 import PaymentSuccess from './pages/PaymentSuccess';
 import Pricing from './pages/Pricing';
 import Questionnaire from './pages/Questionnaire';
+import ResetPassword from './pages/ResetPassword';
 import Review from './pages/Review';
 import UpgradeSuccess from './pages/UpgradeSuccess';
 import fileGenerator from './pages/file-generator';
@@ -80,7 +82,9 @@ export const PAGES = {
     "Review": Review,
     "UpgradeSuccess": UpgradeSuccess,
     "account/cancel": AccountCancel,
+    "account/forgot": ForgotPassword,
     "account/password": ChangePassword,
+    "account/reset": ResetPassword,
     "file-generator": fileGenerator,
     "new-generation": newGeneration,
     "login": Login,

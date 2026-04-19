@@ -97,6 +97,29 @@ TXT;
 }
 
 /**
+ * Password reset email. The raw token is embedded in the link —
+ * the DB only stores its SHA-256 hash.
+ */
+function sendPasswordResetEmail(string $email, string $resetUrl): bool
+{
+    $subject = 'Reset your AI Visibility Generator password';
+    $body = <<<TXT
+A password reset was requested for this email address.
+
+If you requested it, click the link below within the next hour to set
+a new password:
+
+{$resetUrl}
+
+If you did not request a reset, you can safely ignore this email —
+your current password will continue to work.
+
+This link is single-use and expires in 60 minutes.
+TXT;
+    return sendMail($email, $subject, $body);
+}
+
+/**
  * Generic deletion reminder. Used by the cron job.
  */
 function sendDeletionReminder(string $email, string $targetLabel, int $daysLeft, string $accessUrl): bool

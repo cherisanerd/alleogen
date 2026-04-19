@@ -50,10 +50,16 @@ CREATE TABLE IF NOT EXISTS alleogen_users (
     updated_at              DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     last_login_at           DATETIME DEFAULT NULL,
 
+    -- Password reset flow. token_hash stores SHA-256 of the raw token
+    -- emailed to the user; the raw token never touches the DB.
+    reset_token_hash        VARCHAR(64) DEFAULT NULL,
+    reset_token_expires     DATETIME    DEFAULT NULL,
+
     INDEX idx_email (email),
     INDEX idx_ghl_contact (ghl_contact_id),
     INDEX idx_subscription_status (subscription_status),
-    INDEX idx_delete_clock (delete_clock_active, delete_files_on)
+    INDEX idx_delete_clock (delete_clock_active, delete_files_on),
+    INDEX idx_reset_token (reset_token_hash)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- -----------------------------------------------------------

@@ -25,9 +25,17 @@ const PUBLIC_ROUTES = new Set([
   'file-generator',
 ]);
 
+// Routes under /account/ that don't require an existing session:
+// the password-reset flow has to be reachable when the user has
+// forgotten the password they'd otherwise log in with.
+const PUBLIC_ACCOUNT_SUBROUTES = new Set(['forgot', 'reset']);
+
 const isPublicRoute = (pageName) => {
-  const segment = (pageName || '').split('/')[0];
-  return PUBLIC_ROUTES.has(segment) || segment === 'g';
+  const parts = (pageName || '').split('/');
+  const segment = parts[0] || '';
+  if (PUBLIC_ROUTES.has(segment) || segment === 'g') return true;
+  if (segment === 'account' && PUBLIC_ACCOUNT_SUBROUTES.has(parts[1] || '')) return true;
+  return false;
 };
 
 const LayoutWrapper = ({ children, currentPageName }) => {
