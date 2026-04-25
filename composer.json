@@ -5,10 +5,11 @@
     "license": "proprietary",
     "require": {
         "php": ">=8.0",
-        "ext-pdo_mysql": "*",
         "ext-curl": "*",
-        "ext-zip": "*",
         "ext-json": "*",
+        "ext-pdo_mysql": "*",
+        "ext-zip": "*",
+        "phpmailer/phpmailer": "^7.0",
         "stripe/stripe-php": "^13.0"
     },
     "autoload": {

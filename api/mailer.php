@@ -10,6 +10,15 @@ declare(strict_types=1);
 /**
  * Send a plain-text email. Returns true on success, false on failure.
  * Failures are logged but never throw.
+ *
+ * Delivery path:
+ *   - If config.local.php has SMTP secrets (`smtp_host`), use PHPMailer
+ *     to relay through that server. This is the production-grade path.
+ *     Works with Resend, Postmark, SendGrid, AWS SES, Mailgun, or any
+ *     vanilla SMTP relay.
+ *   - Otherwise fall back to PHP's mail() — fine for dev and for hosts
+ *     where Exim is trustworthy, but typically unreliable on shared
+ *     hosting due to sending-reputation issues.
  */
 function sendMail(string $toEmail, string $subject, string $body): bool
 {
@@ -21,13 +30,76 @@ function sendMail(string $toEmail, string $subject, string $body): bool
     // Strip CR/LF from subject to defend against header injection.
     $safeSubject = preg_replace('/[\r\n]+/', ' ', $subject) ?? '';
 
-    $fromAddress = getSetting('mail_from_address', 'no-reply@cherisanerd.com');
-    $fromName    = getSetting('mail_from_name', 'AEO File Generator');
+    $fromAddress = preg_replace('/[\r\n]+/', '', getSetting('mail_from_address', 'no-reply@cherisanerd.com')) ?? '';
+    $fromName    = preg_replace('/[\r\n]+/', ' ', getSetting('mail_from_name',    'AEO File Generator')) ?? '';
 
-    // Also scrub CR/LF from the From header source.
-    $fromName    = preg_replace('/[\r\n]+/', ' ', $fromName) ?? '';
-    $fromAddress = preg_replace('/[\r\n]+/', '',  $fromAddress) ?? '';
+    $smtpHost = secret('smtp_host');
+    if ($smtpHost !== '') {
+        return sendMailViaSmtp($toEmail, $safeSubject, $body, $fromAddress, $fromName);
+    }
+    return sendMailViaMailFn($toEmail, $safeSubject, $body, $fromAddress, $fromName);
+}
 
+/**
+ * PHPMailer-backed SMTP delivery. Reads credentials from
+ * config.local.php:
+ *
+ *   'smtp_host'     => 'smtp.resend.com'
+ *   'smtp_port'     => 465                  (default 587)
+ *   'smtp_encryption' => 'ssl' | 'tls'      (default tls)
+ *   'smtp_user'     => 'resend'
+ *   'smtp_pass'     => 're_your_api_key_here'
+ */
+function sendMailViaSmtp(string $toEmail, string $subject, string $body, string $fromAddress, string $fromName): bool
+{
+    // Lazy-load PHPMailer so we don't pay the autoload cost on
+    // mail()-only deploys.
+    if (!class_exists(\PHPMailer\PHPMailer\PHPMailer::class)) {
+        $autoload = __DIR__ . '/../vendor/autoload.php';
+        if (is_file($autoload)) require_once $autoload;
+    }
+    if (!class_exists(\PHPMailer\PHPMailer\PHPMailer::class)) {
+        logError('api', 'PHPMailer autoload missing; falling back to mail().');
+        return sendMailViaMailFn($toEmail, $subject, $body, $fromAddress, $fromName);
+    }
+
+    $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
+    try {
+        $mail->isSMTP();
+        $mail->Host       = secret('smtp_host');
+        $mail->Port       = (int) (secret('smtp_port', '587') ?: 587);
+        $mail->SMTPAuth   = true;
+        $mail->Username   = secret('smtp_user');
+        $mail->Password   = secret('smtp_pass');
+        $enc = strtolower(secret('smtp_encryption', 'tls'));
+        $mail->SMTPSecure = $enc === 'ssl'
+            ? \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS
+            : \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_STARTTLS;
+
+        $mail->CharSet = 'UTF-8';
+        $mail->setFrom($fromAddress, $fromName);
+        $mail->addAddress($toEmail);
+        $mail->Subject = $subject;
+        $mail->Body    = $body;
+        $mail->isHTML(false);
+
+        $mail->send();
+        return true;
+    } catch (\Throwable $e) {
+        logError('api', 'SMTP send failed: ' . $e->getMessage(), null, [
+            'host' => secret('smtp_host'),
+            'to'   => $toEmail,
+        ]);
+        return false;
+    }
+}
+
+/**
+ * Original mail() fallback. Kept so dev setups without SMTP creds
+ * still work, and so deploys that don't need a relay can skip PHPMailer.
+ */
+function sendMailViaMailFn(string $toEmail, string $subject, string $body, string $fromAddress, string $fromName): bool
+{
     $headers = [
         "From: {$fromName} <{$fromAddress}>",
         "Reply-To: {$fromAddress}",
@@ -36,7 +108,7 @@ function sendMail(string $toEmail, string $subject, string $body): bool
         "X-Mailer: alleogen/" . (defined('ALLEOGEN_VERSION') ? ALLEOGEN_VERSION : 'dev'),
     ];
 
-    $ok = @mail($toEmail, $safeSubject, $body, implode("\r\n", $headers));
+    $ok = @mail($toEmail, $subject, $body, implode("\r\n", $headers));
     if (!$ok) {
         logError('api', "mail() failed to $toEmail");
     }

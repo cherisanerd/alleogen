@@ -47,5 +47,29 @@ return [
         // First admin email — any user account with this email is auto-admin
         // on first login. Leave blank to disable bootstrap.
         'bootstrap_admin_email' => '',
+
+        // SMTP relay — optional. If 'smtp_host' is non-empty, the mailer
+        // uses PHPMailer over SMTP. Otherwise it falls back to PHP's
+        // mail() function. Recommended: Resend, Postmark, SendGrid,
+        // AWS SES, Mailgun.
+        //
+        // Resend example (free tier — 3,000 emails/month):
+        //   'smtp_host'       => 'smtp.resend.com',
+        //   'smtp_port'       => 465,
+        //   'smtp_encryption' => 'ssl',
+        //   'smtp_user'       => 'resend',
+        //   'smtp_pass'       => 're_your_api_key_here',
+        //
+        // Postmark:
+        //   'smtp_host'       => 'smtp.postmarkapp.com',
+        //   'smtp_port'       => 587,
+        //   'smtp_encryption' => 'tls',
+        //   'smtp_user'       => 'your-server-token',
+        //   'smtp_pass'       => 'your-server-token',
+        'smtp_host'       => '',
+        'smtp_port'       => '',
+        'smtp_encryption' => '',
+        'smtp_user'       => '',
+        'smtp_pass'       => '',
     ],
 ];
