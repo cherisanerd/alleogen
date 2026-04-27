@@ -1,15 +1,21 @@
 <?php
 /**
- * Very thin mail() wrapper. Subject + headers are sanitized to prevent
- * header injection. For higher deliverability in production, swap mail()
- * for PHPMailer/SMTP here — all callers go through sendMail().
+ * Mail wrapper. Uses PHPMailer over SMTP when 'smtp.host' is configured in
+ * config.local.php; falls back to PHP mail() only if SMTP is not set up.
+ * All callers go through sendMail(); subject + addresses are sanitized to
+ * prevent header injection.
  */
 
 declare(strict_types=1);
 
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception as PHPMailerException;
+
+require_once dirname(__DIR__) . '/vendor/autoload.php';
+
 /**
  * Send a plain-text email. Returns true on success, false on failure.
- * Failures are logged but never throw.
+ * Failures are logged with the underlying SMTP error but never throw.
  */
 function sendMail(string $toEmail, string $subject, string $body): bool
 {
@@ -18,29 +24,66 @@ function sendMail(string $toEmail, string $subject, string $body): bool
         return false;
     }
 
-    // Strip CR/LF from subject to defend against header injection.
     $safeSubject = preg_replace('/[\r\n]+/', ' ', $subject) ?? '';
 
-    $fromAddress = getSetting('mail_from_address', 'no-reply@cherisanerd.com');
-    $fromName    = getSetting('mail_from_name', 'AEO File Generator');
-
-    // Also scrub CR/LF from the From header source.
+    $fromAddress = (string) getSetting('mail_from_address', 'no-reply@cherisanerd.com');
+    $fromName    = (string) getSetting('mail_from_name', 'AEO File Generator');
     $fromName    = preg_replace('/[\r\n]+/', ' ', $fromName) ?? '';
     $fromAddress = preg_replace('/[\r\n]+/', '',  $fromAddress) ?? '';
 
-    $headers = [
-        "From: {$fromName} <{$fromAddress}>",
-        "Reply-To: {$fromAddress}",
-        "MIME-Version: 1.0",
-        "Content-Type: text/plain; charset=utf-8",
-        "X-Mailer: alleogen/" . (defined('ALLEOGEN_VERSION') ? ALLEOGEN_VERSION : 'dev'),
-    ];
+    global $LOCAL_CONFIG;
+    $smtp = is_array($LOCAL_CONFIG['smtp'] ?? null) ? $LOCAL_CONFIG['smtp'] : [];
+    $host = (string) ($smtp['host'] ?? '');
 
-    $ok = @mail($toEmail, $safeSubject, $body, implode("\r\n", $headers));
-    if (!$ok) {
-        logError('api', "mail() failed to $toEmail");
+    if ($host === '') {
+        // No SMTP configured — fall back to PHP mail().
+        $headers = [
+            "From: {$fromName} <{$fromAddress}>",
+            "Reply-To: {$fromAddress}",
+            "MIME-Version: 1.0",
+            "Content-Type: text/plain; charset=utf-8",
+            "X-Mailer: alleogen/" . (defined('ALLEOGEN_VERSION') ? ALLEOGEN_VERSION : 'dev'),
+        ];
+        $ok = @mail($toEmail, $safeSubject, $body, implode("\r\n", $headers));
+        if (!$ok) {
+            logError('api', "mail() failed to {$toEmail} (no SMTP configured)");
+        }
+        return (bool) $ok;
     }
-    return (bool) $ok;
+
+    $mailer = new PHPMailer(true);
+    try {
+        $mailer->isSMTP();
+        $mailer->Host       = $host;
+        $mailer->Port       = (int) ($smtp['port'] ?? 465);
+        $mailer->SMTPAuth   = true;
+        $mailer->Username   = (string) ($smtp['username'] ?? '');
+        $mailer->Password   = (string) ($smtp['password'] ?? '');
+        $encryption         = strtolower((string) ($smtp['encryption'] ?? 'ssl'));
+        $mailer->SMTPSecure = $encryption === 'tls'
+            ? PHPMailer::ENCRYPTION_STARTTLS
+            : PHPMailer::ENCRYPTION_SMTPS;
+        $mailer->CharSet    = 'UTF-8';
+        $mailer->XMailer    = 'alleogen/' . (defined('ALLEOGEN_VERSION') ? ALLEOGEN_VERSION : 'dev');
+
+        $mailer->setFrom($fromAddress, $fromName);
+        $mailer->addReplyTo($fromAddress, $fromName);
+        $mailer->addAddress($toEmail);
+
+        $mailer->Subject = $safeSubject;
+        $mailer->Body    = $body;
+
+        $mailer->send();
+        return true;
+    } catch (PHPMailerException $e) {
+        // PHPMailer's ErrorInfo is the user-facing reason (auth failed,
+        // host unreachable, etc.) and is safe to log.
+        logError('api', "SMTP send failed to {$toEmail}: " . $mailer->ErrorInfo);
+        return false;
+    } catch (Throwable $e) {
+        logError('api', "SMTP send threw for {$toEmail}: " . $e->getMessage());
+        return false;
+    }
 }
 
 /**

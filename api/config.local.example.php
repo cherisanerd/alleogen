@@ -48,4 +48,15 @@ return [
         // on first login. Leave blank to disable bootstrap.
         'bootstrap_admin_email' => '',
     ],
+
+    // SMTP delivery. Bluehost example shown — host is usually mail.<domain>
+    // or boxNNNN.bluehost.com. Username = full mailbox address.
+    // Leave 'host' empty to fall back to PHP's mail() (not recommended).
+    'smtp' => [
+        'host'       => 'mail.cherisanerd.com',
+        'port'       => 465,
+        'username'   => 'no-reply@cherisanerd.com',
+        'password'   => '',
+        'encryption' => 'ssl', // 'ssl' (port 465) or 'tls' (port 587)
+    ],
 ];
